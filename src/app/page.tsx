@@ -110,6 +110,8 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isComplete, setIsComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   const currentQuestion = questions[currentIndex];
 
@@ -146,10 +148,39 @@ export default function Home() {
     window.setTimeout(() => setIsComplete(true), 150);
   };
 
-  const onSubmit = (values: LeadValues) => {
-    console.log("Lead captured:", { ...values, responses });
-    form.reset();
-    setResponses((prev) => ({ ...prev, leadDetails: `${values.name} | ${values.email}` }));
+  const onSubmit = async (values: LeadValues) => {
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          responses,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to submit your enquiry.");
+      }
+
+      setSubmitMessage("Your enquiry has been submitted successfully.");
+      form.reset();
+      setResponses({});
+      setCurrentIndex(0);
+      setIsComplete(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit your enquiry.";
+      setSubmitMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isComplete) {
@@ -262,11 +293,14 @@ export default function Home() {
                   />
                 </div>
 
+                {submitMessage && <p className="text-sm text-emerald-300">{submitMessage}</p>}
+
                 <button
                   type="submit"
-                  className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+                  disabled={isSubmitting}
+                  className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Send my enquiry
+                  {isSubmitting ? "Sending..." : "Send my enquiry"}
                 </button>
               </form>
             </aside>
