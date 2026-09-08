@@ -1,0 +1,21 @@
+name: Next Steps reminder
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reminder note
+        run: |
+          echo "Reminder: review NEXT_STEPS.md and update the active priorities before the next demo or release checkpoint."
+          echo "Use this checklist to confirm status, blockers, and next actions."
