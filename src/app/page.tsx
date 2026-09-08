@@ -91,15 +91,15 @@ const leadSchema = z.object({
 type LeadValues = z.infer<typeof leadSchema>;
 
 function getRecommendation(responses: Record<string, string>) {
-  if (responses.goal === "both" || responses.goal === "windows") {
+  if (responses.goal === "Both" || responses.goal === "Windows") {
     return "Full Home Upgrade Package";
   }
 
-  if (responses.goal === "doors") {
+  if (responses.goal === "Doors") {
     return "Secure Entry Upgrade";
   }
 
-  if (responses.goal === "conservatory") {
+  if (responses.goal === "Conservatory / extension") {
     return "Conservatory Refurbishment";
   }
 
@@ -235,8 +235,9 @@ export default function Home() {
 
               <form className="mt-6 space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
                 <div>
-                  <label className="mb-2 block text-sm text-slate-200">Full name</label>
+                  <label htmlFor="name" className="mb-2 block text-sm text-slate-200">Full name</label>
                   <input
+                    id="name"
                     {...form.register("name")}
                     className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none ring-0 transition focus:border-emerald-400"
                     placeholder="Alex Smith"
@@ -247,8 +248,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-200">Email</label>
+                  <label htmlFor="email" className="mb-2 block text-sm text-slate-200">Email</label>
                   <input
+                    id="email"
                     {...form.register("email")}
                     type="email"
                     className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400"
@@ -260,8 +262,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-200">Phone</label>
+                  <label htmlFor="phone" className="mb-2 block text-sm text-slate-200">Phone</label>
                   <input
+                    id="phone"
                     {...form.register("phone")}
                     className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400"
                     placeholder="07700 900123"
@@ -272,8 +275,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-200">Postcode</label>
+                  <label htmlFor="postcode" className="mb-2 block text-sm text-slate-200">Postcode</label>
                   <input
+                    id="postcode"
                     {...form.register("postcode")}
                     className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400"
                     placeholder="M1 1AA"
@@ -284,8 +288,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-200">Project notes</label>
+                  <label htmlFor="notes" className="mb-2 block text-sm text-slate-200">Project notes</label>
                   <textarea
+                    id="notes"
                     {...form.register("notes")}
                     rows={4}
                     className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400"
@@ -322,6 +327,15 @@ export default function Home() {
             1 of {questions.length}
           </div>
         </header>
+
+        {submitMessage && (
+          <p
+            aria-live="polite"
+            className="mb-6 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"
+          >
+            {submitMessage}
+          </p>
+        )}
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-lg sm:p-8">

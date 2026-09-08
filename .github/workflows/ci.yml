@@ -57,11 +57,17 @@ jobs:
       - name: Run lint
         run: npm run lint
 
-      - name: Run tests
-        run: node --test tests/lead-store.test.mjs
+      - name: Run tests with coverage
+        run: npm run test:coverage
 
       - name: Check demo guide inventory
         run: npm run docs:demo:check
 
       - name: Build application
         run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run end-to-end test
+        run: npm run test:e2e

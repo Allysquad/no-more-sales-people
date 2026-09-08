@@ -129,6 +129,15 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run build"
 
 The CI workflow runs these checks for pull requests and pushes to `main`. It uses an isolated PostgreSQL service, so it does not need production credentials.
 
+Run the browser-level end-to-end test locally after starting PostgreSQL:
+
+```powershell
+npx playwright install chromium
+powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run test:e2e"
+```
+
+This test completes the six-question funnel in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
+
 ## 8. Keep this guide current
 
 The project inventory below is generated from repository files and package scripts. Run this command after changing a project entry point, script, workflow, or documentation path:
@@ -165,6 +174,9 @@ CI checks the generated inventory on pull requests. After a change reaches `main
 | `npm run db:generate` | `prisma generate` |
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy` |
+| `npm run test:db` | `node --test tests/lead-database.test.mjs` |
+| `npm run test:coverage` | `node --experimental-test-coverage --test tests/lead-store.test.mjs tests/lead-database.test.mjs` |
+| `npm run test:e2e` | `playwright test` |
 | `npm run docs:demo` | `node scripts/update-demo-guide.mjs` |
 | `npm run docs:demo:check` | `node scripts/update-demo-guide.mjs --check` |
 <!-- END GENERATED PROJECT INVENTORY -->
