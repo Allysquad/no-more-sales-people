@@ -19,6 +19,7 @@ test('completes the funnel and persists every submitted value', async ({ page })
     ['What type of property do you have?', 'House'],
     ['Which area are you based in?', 'North of England'],
     ['What budget are you working with?', '£8k - £15k'],
+    ['Would you like to book a consultation?', 'Yes, book a consultation'],
   ];
 
   for (const [question, answer] of steps) {
@@ -63,9 +64,56 @@ test('completes the funnel and persists every submitted value', async ({ page })
         property: 'House',
         area: 'North of England',
         budget: '£8k - £15k',
+        consultation: 'Yes, book a consultation',
       },
     });
   } finally {
     await prisma.lead.deleteMany({ where: { email } });
   }
+});
+
+test('keeps the selected answer highlighted when going back and allows it to change', async ({ page }) => {
+  await page.goto('/');
+
+  const windows = page.getByRole('button', { name: /^Windows/ });
+  const doors = page.getByRole('button', { name: /^Doors/ });
+
+  await expect(windows).toHaveAttribute('aria-pressed', 'false');
+  await windows.click();
+  await expect(page.getByRole('heading', { name: 'What is the biggest issue right now?' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { name: 'What are you looking to improve?' })).toBeVisible();
+  await expect(windows).toHaveAttribute('aria-pressed', 'true');
+
+  await doors.click();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(doors).toHaveAttribute('aria-pressed', 'true');
+  await expect(windows).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('includes consultation as question seven and Home resets the completed flow', async ({ page }) => {
+  await page.goto('/');
+
+  const answers = [
+    'Windows',
+    'Drafts / heat loss',
+    'Within 1-3 months',
+    'House',
+    'North of England',
+    '£8k - £15k',
+  ];
+
+  for (const answer of answers) {
+    await page.locator('button').filter({ hasText: answer }).first().click();
+  }
+
+  await expect(page.getByRole('heading', { name: 'Would you like to book a consultation?' })).toBeVisible();
+  await page.getByRole('button', { name: /^No thanks/ }).click();
+  await expect(page.getByRole('heading', { name: 'Full Home Upgrade Package' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Home' }).click();
+  await expect(page.getByRole('heading', { name: 'What are you looking to improve?' })).toBeVisible();
+  await expect(page.getByText('0 of 7 answered')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Windows/ })).toHaveAttribute('aria-pressed', 'false');
 });

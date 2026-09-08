@@ -100,6 +100,15 @@ const questions: Question[] = [
       { id: "premium", label: "£15k+" },
     ],
   },
+  {
+    id: "consultation",
+    prompt: "Would you like to book a consultation?",
+    helper: "A quick consultation helps us confirm the best next step for your home improvement project.",
+    answers: [
+      { id: "yes", label: "Yes, book a consultation" },
+      { id: "no", label: "No thanks, just show my recommendation" },
+    ],
+  },
 ];
 
 const leadSchema = z.object({
@@ -165,6 +174,15 @@ export default function Home() {
       notes: "",
     },
   });
+
+  const resetHomeFlow = () => {
+    setCurrentIndex(0);
+    setResponses({});
+    setIsComplete(false);
+    setSubmitMessage(null);
+    form.reset();
+    setCurrentView("home");
+  };
 
   const loadAnalytics = async () => {
     setIsLoadingAnalytics(true);
@@ -266,10 +284,10 @@ export default function Home() {
       }
 
       setSubmitMessage("Your enquiry has been submitted successfully.");
-      form.reset();
       setResponses({});
       setCurrentIndex(0);
       setIsComplete(false);
+      form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit your enquiry.";
       setSubmitMessage(message);
@@ -286,7 +304,7 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentView("home")}
+                onClick={resetHomeFlow}
                 className="rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-400"
               >
                 Home
@@ -455,7 +473,7 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentView("home")}
+                onClick={resetHomeFlow}
                 className="rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-400"
               >
                 Home
@@ -599,7 +617,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setCurrentView("home")}
+              onClick={resetHomeFlow}
               className="rounded-full border border-sky-400/60 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-500/20"
             >
               Home
@@ -611,9 +629,6 @@ export default function Home() {
             >
               Business analytics
             </button>
-          </div>
-          <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-200">
-            1 of {questions.length}
           </div>
         </header>
 
@@ -655,8 +670,13 @@ export default function Home() {
               <button
                 key={answer.id}
                 type="button"
+                aria-pressed={responses[currentQuestion.id] === answer.label}
                 onClick={() => handleAnswer(answer.id)}
-                className="group rounded-2xl border border-white/10 bg-slate-800/90 p-4 text-left transition duration-200 hover:border-sky-400 hover:bg-slate-800 hover:shadow-lg hover:shadow-sky-500/10"
+                className={`group rounded-2xl border p-4 text-left transition duration-200 hover:border-sky-400 hover:bg-slate-800 hover:shadow-lg hover:shadow-sky-500/10 ${
+                  responses[currentQuestion.id] === answer.label
+                    ? "border-sky-400 bg-sky-500/15 shadow-lg shadow-sky-500/10"
+                    : "border-white/10 bg-slate-800/90"
+                }`}
               >
                 <span className="block text-base font-medium text-slate-50">{answer.label}</span>
                 <span className="mt-2 block text-sm text-slate-400 group-hover:text-slate-300">

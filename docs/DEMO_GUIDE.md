@@ -35,14 +35,14 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:down"
 
 1. Open the app on the public **Home** screen; this is the default questionnaire experience.
 2. The top-right navigation includes a **Home** button and a **Business analytics** button.
-3. Select an answer for each of the six questions.
+3. Select an answer for each of the seven questions.
 4. Point out the progress indicator and the changing question count.
-5. Use the Back button to demonstrate that the flow can move to an earlier question.
+5. Use the Back button to demonstrate that the flow can move to an earlier question and keeps the previous answer highlighted.
 6. Complete the final question to open the recommendation and contact form.
 
 The public visitor journey should remain on the questionnaire unless a registered business user logs in.
 
-The six qualification areas are:
+The seven qualification areas are:
 
 - Product goal: windows, doors, both, or conservatory/extension
 - Main issue: heat loss, security, appearance, or noise
@@ -50,6 +50,7 @@ The six qualification areas are:
 - Property type: house, bungalow, flat/apartment, or commercial
 - Area: north, Midlands, south, or unsure
 - Budget: under £3k, £3k-£8k, £8k-£15k, or £15k+
+- Consultation: book a consultation or continue to the recommendation
 
 ## 3. Demo the recommendation
 
@@ -168,7 +169,7 @@ npx playwright install chromium
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run test:e2e"
 ```
 
-This test completes the six-question funnel in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
+This test completes the seven-question funnel in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
 
 ## 9. Keep this guide current
 
