@@ -60,5 +60,8 @@ jobs:
       - name: Run tests
         run: node --test tests/lead-store.test.mjs
 
+      - name: Check demo guide inventory
+        run: npm run docs:demo:check
+
       - name: Build application
         run: npm run build

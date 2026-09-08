@@ -79,6 +79,7 @@ The local database uses the `DATABASE_URL` in `.env`. To move to Supabase later,
 - [src/app/layout.tsx](src/app/layout.tsx) — app shell and metadata
 - [src/app/globals.css](src/app/globals.css) — theme and styling
 - [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) — database diagram and schema reference
+- [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) — quick walkthrough for the frontend, API, database, and CI/CD
 - [.github/workflows/ci.yml](.github/workflows/ci.yml) — CI checks for pull requests and `main`
 - [run-app.ps1](run-app.ps1) — Windows helper script to start the app
 - [stop-app.ps1](stop-app.ps1) — Windows helper script to stop the app

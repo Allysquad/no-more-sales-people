@@ -1,0 +1,43 @@
+name: Update demo guide
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: update-demo-guide
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh generated demo inventory
+        run: npm run docs:demo
+
+      - name: Commit demo guide update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/DEMO_GUIDE.md
+          if git diff --cached --quiet; then
+            echo "No demo guide changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: refresh demo guide"
+          git push
