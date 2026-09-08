@@ -27,16 +27,33 @@ for (const line of output.split(/\n/)) {
 }
 
 const isoDate = new Date().toISOString().slice(0, 10);
+const recentActivity = entries.length ? entries.join('\n') : '- No recent updates yet.';
+
 const newContent = [
   '# Changelog',
   '',
-  'Auto-generated from recent Git commits.',
+  '## Latest project summary',
   '',
-  `## ${isoDate}`,
+  'This update continues to strengthen the lead qualification prototype for a home improvement and windows/doors sales funnel.',
   '',
-  entries.length ? entries.join('\n') : '- No new changes yet.',
+  '### Delivered',
+  '- Multi-step homeowner qualification flow with clear progress tracking.',
+  '- Recommendation logic that routes prospects into a suitable product offering.',
+  '- Lead capture form for name, email, phone, postcode, and project notes.',
+  '- Business-facing summary so sales teams can review the opportunity quickly.',
+  '- GitHub repository setup and automation for tracking project updates.',
+  '',
+  '### Recent activity',
+  recentActivity,
+  '',
+  '### Next milestone',
+  '- Connect the enquiry form to a real backend, CRM, or email workflow.',
+  '- Review the flow with business stakeholders and refine messaging for conversion.',
+  '- Prepare production deployment and lead routing for live traffic.',
+  '',
+  `### Last updated: ${isoDate}`,
   '',
 ].join('\n');
 
 fs.writeFileSync(changelogPath, newContent, 'utf8');
-console.log(`Updated CHANGELOG.md with ${entries.length} entries.`);
+console.log(`Updated CHANGELOG.md with ${entries.length} recent activity entries.`);

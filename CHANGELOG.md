@@ -1,9 +1,24 @@
 # Changelog
 
-Auto-generated from recent Git commits.
+## Latest project summary
 
-## 2026-09-08
+This update continues to strengthen the lead qualification prototype for a home improvement and windows/doors sales funnel.
 
+### Delivered
+- Multi-step homeowner qualification flow with clear progress tracking.
+- Recommendation logic that routes prospects into a suitable product offering.
+- Lead capture form for name, email, phone, postcode, and project notes.
+- Business-facing summary so sales teams can review the opportunity quickly.
+- GitHub repository setup and automation for tracking project updates.
+
+### Recent activity
 - 2026-09-08: Add automated changelog workflow (Alli)
 - 2026-09-08: Add business-facing summary changelog (Alli)
 - 2026-09-08: Initial app scaffold and lead qualification prototype (Alli)
+
+### Next milestone
+- Connect the enquiry form to a real backend, CRM, or email workflow.
+- Review the flow with business stakeholders and refine messaging for conversion.
+- Prepare production deployment and lead routing for live traffic.
+
+### Last updated: 2026-09-08
