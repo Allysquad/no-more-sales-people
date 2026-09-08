@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { saveLeadSubmission, validateLeadSubmission } from '@/lib/lead-store';
+import { saveLeadSubmissionToDatabase } from '@/lib/lead-repository';
+import { validateLeadSubmission } from '@/lib/lead-store';
 
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
     const validated = validateLeadSubmission(payload);
-    const record = await saveLeadSubmission(validated);
+    const record = await saveLeadSubmissionToDatabase(validated);
 
     return NextResponse.json({
       success: true,
