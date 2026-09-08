@@ -12,6 +12,9 @@ This update continues to strengthen the lead qualification prototype for a home 
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-08: Add PostgreSQL setup, schema docs, and CI (Alli)
+- 2026-09-08: Add next steps tracker, reminder workflow, and live lead submission (Alli)
+- 2026-09-08: Add next steps tracker and reminder workflow (Alli)
 - 2026-09-08: Polish changelog for stakeholder demo (Alli)
 - 2026-09-08: Add automated changelog workflow (Alli)
 - 2026-09-08: Add business-facing summary changelog (Alli)
