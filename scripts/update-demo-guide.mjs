@@ -8,6 +8,8 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 const surfaces = [
   ['Visitor flow', 'src/app/page.tsx', 'Open http://localhost:3000'],
   ['Lead API', 'src/app/api/leads/route.ts', 'POST http://localhost:3000/api/leads'],
+  ['Business login API', 'src/app/api/business/login/route.ts', 'POST http://localhost:3000/api/business/login'],
+  ['Business analytics API', 'src/app/api/business/summary/route.ts', 'GET http://localhost:3000/api/business/summary'],
   ['Database schema', 'prisma/schema.prisma', 'npm run db:deploy'],
   ['Database migrations', 'prisma/migrations/', 'npx prisma migrate status'],
   ['Database diagram', 'docs/DATABASE_SCHEMA.md', 'Open the Markdown preview'],

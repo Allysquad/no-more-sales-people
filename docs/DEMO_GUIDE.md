@@ -33,11 +33,14 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:down"
 
 ## 2. Demo the qualification flow
 
-1. Start on the **Lead finder** screen.
-2. Select an answer for each of the six questions.
-3. Point out the progress indicator and the changing question count.
-4. Use the Back button to demonstrate that the flow can move to an earlier question.
-5. Complete the final question to open the recommendation and contact form.
+1. Open the app on the public **Home** screen; this is the default questionnaire experience.
+2. The top-right navigation includes a **Home** button and a **Business analytics** button.
+3. Select an answer for each of the six questions.
+4. Point out the progress indicator and the changing question count.
+5. Use the Back button to demonstrate that the flow can move to an earlier question.
+6. Complete the final question to open the recommendation and contact form.
+
+The public visitor journey should remain on the questionnaire unless a registered business user logs in.
 
 The six qualification areas are:
 
@@ -104,7 +107,34 @@ Invoke-RestMethod `
 
 The route validates the payload before Prisma writes it to PostgreSQL.
 
-## 6. Demo the database
+## 6. Demo the business login and analytics
+
+The app starts on the public lead questionnaire. To switch into the business-only view, click **Business analytics** in the top navigation. If no business user is signed in, the UI shows a login form instead of the dashboard.
+
+A seeded business user is included in the database so the analytics view can be demonstrated without setting up a separate auth system.
+
+Use these credentials in the login form:
+
+- Email: `business@nomoresalespeople.com`
+- Password: `demo-password`
+
+Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. The frontend calls these endpoints:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:3000/api/business/login" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"email":"business@nomoresalespeople.com","password":"demo-password"}'
+
+Invoke-RestMethod `
+  -Uri "http://localhost:3000/api/business/summary" `
+  -Method Get
+```
+
+The `BusinessUser` model lives beside the `Lead` model in the Prisma schema. It is used to gate the analytics screen so public visitors never see the business dashboard unless the login matches a database record.
+
+## 7. Demo the database
 
 Check that PostgreSQL is running and migrations are applied:
 
@@ -113,9 +143,9 @@ docker compose ps
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npx prisma migrate status"
 ```
 
-The current schema contains one `Lead` table. See [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) for the diagram and field reference.
+The current schema contains the `Lead` and `BusinessUser` tables. See [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) for the diagram and field reference.
 
-## 7. Demo quality checks and CI/CD
+## 8. Demo quality checks and CI/CD
 
 Run the same checks used by GitHub Actions:
 
@@ -124,7 +154,9 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:generate"
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run lint"
 node --test tests/lead-store.test.mjs
+node --test tests/lead-database.test.mjs
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run build"
+powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run docs:demo:check"
 ```
 
 The CI workflow runs these checks for pull requests and pushes to `main`. It uses an isolated PostgreSQL service, so it does not need production credentials.
@@ -138,7 +170,7 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run test:e2e"
 
 This test completes the six-question funnel in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
 
-## 8. Keep this guide current
+## 9. Keep this guide current
 
 The project inventory below is generated from repository files and package scripts. Run this command after changing a project entry point, script, workflow, or documentation path:
 
@@ -155,6 +187,8 @@ CI checks the generated inventory on pull requests. After a change reaches `main
 | --- | --- | --- |
 | Visitor flow | `src/app/page.tsx` | Open http://localhost:3000 |
 | Lead API | `src/app/api/leads/route.ts` | POST http://localhost:3000/api/leads |
+| Business login API | `src/app/api/business/login/route.ts` | POST http://localhost:3000/api/business/login |
+| Business analytics API | `src/app/api/business/summary/route.ts` | GET http://localhost:3000/api/business/summary |
 | Database schema | `prisma/schema.prisma` | npm run db:deploy |
 | Database migrations | `prisma/migrations/` | npx prisma migrate status |
 | Database diagram | `docs/DATABASE_SCHEMA.md` | Open the Markdown preview |

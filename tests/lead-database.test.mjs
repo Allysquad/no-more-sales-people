@@ -44,3 +44,27 @@ test('stores every lead field and questionnaire response in PostgreSQL', async (
     await prisma.lead.delete({ where: { id: created.id } });
   }
 });
+
+test('business users can be looked up by email and password in the database', async () => {
+  const email = 'business-demo@example.com';
+  const password = 'demo-password';
+
+  const created = await prisma.businessUser.create({
+    data: {
+      name: 'Demo Business User',
+      email,
+      password,
+    },
+  });
+
+  try {
+    const found = await prisma.businessUser.findUnique({ where: { email } });
+
+    assert.ok(found);
+    assert.equal(found.name, 'Demo Business User');
+    assert.equal(found.password, password);
+    assert.equal(found.id, created.id);
+  } finally {
+    await prisma.businessUser.delete({ where: { id: created.id } });
+  }
+});

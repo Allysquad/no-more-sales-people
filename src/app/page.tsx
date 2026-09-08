@@ -5,11 +5,33 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+type ViewMode = "home" | "business";
+
 type Question = {
   id: string;
   prompt: string;
   helper: string;
   answers: { id: string; label: string; tone?: string }[];
+};
+
+type BusinessUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type AnalyticsSummary = {
+  totalLeads: number;
+  bookedConsults: number;
+  averageOrderValue: number;
+  recentLeads: Array<{
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    goal: string;
+    postcode: string;
+  }>;
 };
 
 const questions: Question[] = [
@@ -106,12 +128,25 @@ function getRecommendation(responses: Record<string, string>) {
   return "Bespoke Home Improvement Quote";
 }
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isComplete, setIsComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<ViewMode>("home");
+  const [businessUser, setBusinessUser] = useState<BusinessUser | null>(null);
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
   const currentQuestion = questions[currentIndex];
 
@@ -130,6 +165,66 @@ export default function Home() {
       notes: "",
     },
   });
+
+  const loadAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+
+    try {
+      const response = await fetch("/api/business/summary");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to load business analytics.");
+      }
+
+      setAnalytics(data.summary);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load business analytics.";
+      setLoginError(message);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  const handleBusinessNav = async () => {
+    if (businessUser) {
+      setCurrentView("business");
+      await loadAnalytics();
+      return;
+    }
+
+    setCurrentView("business");
+    setLoginError(null);
+    setAnalytics(null);
+  };
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError(null);
+
+    try {
+      const response = await fetch("/api/business/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loginForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to sign in.");
+      }
+
+      setBusinessUser(data.user);
+      setCurrentView("business");
+      await loadAnalytics();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to sign in.";
+      setLoginError(message);
+    }
+  };
 
   const handleAnswer = (answerId: string) => {
     const selected = currentQuestion.answers.find((answer) => answer.id === answerId);
@@ -183,18 +278,200 @@ export default function Home() {
     }
   };
 
+  if (currentView === "business") {
+    return (
+      <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentView("home")}
+                className="rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-400"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={handleBusinessNav}
+                className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
+              >
+                Business analytics
+              </button>
+            </div>
+
+            {businessUser ? (
+              <div className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
+                {businessUser.name}
+              </div>
+            ) : (
+              <div className="rounded-full border border-amber-400/25 bg-amber-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-amber-200">
+                Business login
+              </div>
+            )}
+          </header>
+
+          {!businessUser ? (
+            <section className="mx-auto max-w-xl rounded-[30px] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-lg">
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">Business access</p>
+              <h1 className="mt-4 text-3xl font-semibold text-white">Sign in to view analytics</h1>
+              <p className="mt-3 text-slate-300">
+                This view is only available for registered business users already stored in the database.
+              </p>
+
+              <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+                <div>
+                  <label htmlFor="business-email" className="mb-2 block text-sm text-slate-200">
+                    Business email
+                  </label>
+                  <input
+                    id="business-email"
+                    type="email"
+                    value={loginForm.email}
+                    onChange={(event) => setLoginForm((prev) => ({ ...prev, email: event.target.value }))}
+                    className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-sky-400"
+                    placeholder="business@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="business-password" className="mb-2 block text-sm text-slate-200">
+                    Password
+                  </label>
+                  <input
+                    id="business-password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={(event) => setLoginForm((prev) => ({ ...prev, password: event.target.value }))}
+                    className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-white outline-none transition focus:border-sky-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {loginError && (
+                  <p className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+                    {loginError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full rounded-full bg-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+                >
+                  Sign in
+                </button>
+              </form>
+            </section>
+          ) : (
+            <section className="space-y-6">
+              <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 p-5">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead analytics</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">Business dashboard</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBusinessUser(null)}
+                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25"
+                >
+                  Log out
+                </button>
+              </div>
+
+              {isLoadingAnalytics ? (
+                <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 text-slate-300">
+                  Loading analytics...
+                </div>
+              ) : analytics ? (
+                <>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Qualified leads</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{analytics.totalLeads}</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Booked consults</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{analytics.bookedConsults}</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Average value</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">
+                        {formatCurrency(analytics.averageOrderValue)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-xl font-semibold text-white">Recent leads</h3>
+                      <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        Updated live
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {analytics.recentLeads.length === 0 ? (
+                        <p className="text-slate-300">No leads have been captured yet.</p>
+                      ) : (
+                        analytics.recentLeads.map((lead) => (
+                          <div
+                            key={lead.id}
+                            className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-4 md:flex-row md:items-center md:justify-between"
+                          >
+                            <div>
+                              <p className="font-medium text-white">{lead.name}</p>
+                              <p className="text-sm text-slate-300">{lead.email}</p>
+                            </div>
+                            <div className="text-sm text-slate-300 md:text-right">
+                              <p>{lead.goal}</p>
+                              <p>{lead.postcode}</p>
+                              <p>{new Date(lead.createdAt).toLocaleDateString("en-GB")}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 text-slate-300">
+                  No analytics available yet.
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      </main>
+    );
+  }
+
   if (isComplete) {
     const recommendation = getRecommendation(responses);
 
     return (
       <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <section className="mb-8 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 backdrop-blur-sm">
-            <span className="font-medium text-emerald-300">No More Sales People</span>
+          <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentView("home")}
+                className="rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-400"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={handleBusinessNav}
+                className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
+              >
+                Business analytics
+              </button>
+            </div>
             <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
               Lead Match Ready
             </span>
-          </section>
+          </header>
 
           <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-slate-950/30 backdrop-blur-sm sm:p-8">
@@ -318,10 +595,22 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">Lead finder</p>
-            <h1 className="mt-1 text-lg font-semibold text-white">No More Sales People</h1>
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentView("home")}
+              className="rounded-full border border-sky-400/60 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-500/20"
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={handleBusinessNav}
+              className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
+            >
+              Business analytics
+            </button>
           </div>
           <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-200">
             1 of {questions.length}
@@ -337,93 +626,60 @@ export default function Home() {
           </p>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-lg sm:p-8">
-            <div className="mb-6">
-              <div className="mb-4 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-300">
-                <span>Qualification flow</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 to-emerald-300 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+        <section className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-lg sm:p-8">
+          <div className="mb-6">
+            <div className="mb-4 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-300">
+              <span>Qualification flow</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
-              Question {currentIndex + 1}
-            </p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {currentQuestion.prompt}
-            </h2>
-            <p className="mt-3 max-w-lg text-base leading-7 text-slate-300">
-              {currentQuestion.helper}
-            </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {currentQuestion.answers.map((answer) => (
-                <button
-                  key={answer.id}
-                  type="button"
-                  onClick={() => handleAnswer(answer.id)}
-                  className="group rounded-2xl border border-white/10 bg-slate-800/90 p-4 text-left transition duration-200 hover:border-sky-400 hover:bg-slate-800 hover:shadow-lg hover:shadow-sky-500/10"
-                >
-                  <span className="block text-base font-medium text-slate-50">{answer.label}</span>
-                  <span className="mt-2 block text-sm text-slate-400 group-hover:text-slate-300">
-                    {answer.tone ?? "Recommended for your next step"}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-8 flex items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={() => currentIndex > 0 && setCurrentIndex((index) => index - 1)}
-                disabled={currentIndex === 0}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Back
-              </button>
-
-              <p className="text-sm text-slate-300">
-                {Object.keys(responses).length} of {questions.length} answered
-              </p>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 to-emerald-300 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
 
-          <aside className="rounded-[30px] border border-emerald-400/20 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-sky-500/10 p-6 shadow-2xl shadow-emerald-950/20 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
-              Business client view
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
+            Question {currentIndex + 1}
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            {currentQuestion.prompt}
+          </h2>
+          <p className="mt-3 max-w-lg text-base leading-7 text-slate-300">
+            {currentQuestion.helper}
+          </p>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {currentQuestion.answers.map((answer) => (
+              <button
+                key={answer.id}
+                type="button"
+                onClick={() => handleAnswer(answer.id)}
+                className="group rounded-2xl border border-white/10 bg-slate-800/90 p-4 text-left transition duration-200 hover:border-sky-400 hover:bg-slate-800 hover:shadow-lg hover:shadow-sky-500/10"
+              >
+                <span className="block text-base font-medium text-slate-50">{answer.label}</span>
+                <span className="mt-2 block text-sm text-slate-400 group-hover:text-slate-300">
+                  {answer.tone ?? "Recommended for your next step"}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => currentIndex > 0 && setCurrentIndex((index) => index - 1)}
+              disabled={currentIndex === 0}
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Back
+            </button>
+
+            <p className="text-sm text-slate-300">
+              {Object.keys(responses).length} of {questions.length} answered
             </p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">Live sales snapshot</h3>
-
-            <div className="mt-6 space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Qualified leads</p>
-                <p className="mt-2 text-3xl font-semibold text-white">128</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Booked consults</p>
-                <p className="mt-2 text-3xl font-semibold text-white">24</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Average value</p>
-                <p className="mt-2 text-3xl font-semibold text-white">£6.8k</p>
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-dashed border-white/15 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Current opportunity</p>
-              <p className="mt-3 text-lg font-medium text-white">Window & door upgrades</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                The strongest-performing enquiry type for this audience is homeowners seeking energy
-                efficiency and style improvements with limited disruption.
-              </p>
-            </div>
-          </aside>
+          </div>
         </section>
       </div>
     </main>

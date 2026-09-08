@@ -13,6 +13,7 @@ This update continues to strengthen the lead qualification prototype for a home 
 
 ### Recent activity
 - 2026-09-08: Add end-to-end lead funnel test (Alli)
+- 2026-09-08: Add seeded business login and gated analytics dashboard for demo users (Alli)
 - 2026-09-08: Add demo runbook and documentation automation (Alli)
 - 2026-09-08: Add PostgreSQL setup, schema docs, and CI (Alli)
 - 2026-09-08: Add next steps tracker, reminder workflow, and live lead submission (Alli)

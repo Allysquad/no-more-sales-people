@@ -7,7 +7,9 @@ A conversion-focused lead qualification site built with Next.js, TypeScript, and
 - guides visitors through a multi-step home improvement qualification flow
 - recommends a route based on product interest and urgency
 - collects name, email, phone, postcode, and project notes
-- presents a client-facing summary suitable for a sales team
+- stores leads in PostgreSQL through the API layer
+- gates the business analytics view behind a database-backed login
+- shows a business dashboard with summary metrics and recent leads for approved users only
 
 ## Local development
 
@@ -38,7 +40,19 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:up"
 powershell -ExecutionPolicy Bypass -NoLogo -File .\run-app.ps1
 ```
 
-The app is available at `http://localhost:3000`. The lead API is available at `POST http://localhost:3000/api/leads` and is called by the form automatically.
+The app is available at `http://localhost:3000`.
+
+The public lead flow is the default homepage. For the business-only dashboard, sign in with the seeded demo account:
+
+- Email: `business@nomoresalespeople.com`
+- Password: `demo-password`
+
+The business API endpoints are:
+
+- `POST http://localhost:3000/api/business/login`
+- `GET http://localhost:3000/api/business/summary`
+
+The lead API is available at `POST http://localhost:3000/api/leads` and is called by the form automatically.
 
 For a foreground development server instead of the helper script:
 
@@ -75,7 +89,10 @@ The local database uses the `DATABASE_URL` in `.env`. To move to Supabase later,
 
 ## Project structure
 
-- [src/app/page.tsx](src/app/page.tsx) — lead questionnaire, recommendation logic, and capture form
+- [src/app/page.tsx](src/app/page.tsx) — lead questionnaire, recommendation logic, and gated business dashboard
+- [src/app/api/leads/route.ts](src/app/api/leads/route.ts) — lead validation and PostgreSQL persistence
+- [src/app/api/business/login/route.ts](src/app/api/business/login/route.ts) — business-user login check against the database
+- [src/app/api/business/summary/route.ts](src/app/api/business/summary/route.ts) — analytics summary for signed-in business users
 - [src/app/layout.tsx](src/app/layout.tsx) — app shell and metadata
 - [src/app/globals.css](src/app/globals.css) — theme and styling
 - [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) — database diagram and schema reference
@@ -86,7 +103,7 @@ The local database uses the `DATABASE_URL` in `.env`. To move to Supabase later,
 
 ## Current status
 
-This is a working lead funnel with a local PostgreSQL-backed submission API. The next major step is connecting captured leads to a real CRM, email, or business workflow.
+This is a working lead funnel with a local PostgreSQL-backed submission API and a database-gated business analytics view. The next major step is connecting captured leads to a real CRM, email, or business workflow beyond the seeded demo experience.
 
 ## Continuous integration
 
