@@ -28,9 +28,13 @@ type AnalyticsSummary = {
     id: string;
     name: string;
     email: string;
+    phone: string;
+    notes: string;
     createdAt: string;
     goal: string;
     postcode: string;
+    responses: Record<string, string>;
+    estimatedValue: number | null;
   }>;
 };
 
@@ -155,7 +159,9 @@ export default function Home() {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [selectedLead, setSelectedLead] = useState<AnalyticsSummary["recentLeads"][number] | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [isExportingLeads, setIsExportingLeads] = useState(false);
 
   const currentQuestion = questions[currentIndex];
 
@@ -214,6 +220,33 @@ export default function Home() {
     setCurrentView("business");
     setLoginError(null);
     setAnalytics(null);
+  };
+
+  const handleExportLeads = async () => {
+    setIsExportingLeads(true);
+
+    try {
+      const response = await fetch("/api/business/export");
+
+      if (!response.ok) {
+        throw new Error("Unable to export leads.");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "leads.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to export leads.";
+      setLoginError(message);
+    } finally {
+      setIsExportingLeads(false);
+    }
   };
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -387,13 +420,23 @@ export default function Home() {
                   <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead analytics</p>
                   <h2 className="mt-2 text-2xl font-semibold text-white">Business dashboard</h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBusinessUser(null)}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25"
-                >
-                  Log out
-                </button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportLeads}
+                    disabled={isExportingLeads}
+                    className="rounded-full border border-sky-400/50 bg-sky-500/10 px-4 py-2 text-sm text-sky-200 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isExportingLeads ? "Exporting..." : "Export CSV"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessUser(null)}
+                    className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25"
+                  >
+                    Log out
+                  </button>
+                </div>
               </div>
 
               {isLoadingAnalytics ? (
@@ -432,8 +475,11 @@ export default function Home() {
                         <p className="text-slate-300">No leads have been captured yet.</p>
                       ) : (
                         analytics.recentLeads.map((lead) => (
-                          <div
+                          <button
                             key={lead.id}
+                            type="button"
+                            onClick={() => setSelectedLead(lead)}
+                            aria-label={`Open details for ${lead.name}`}
                             className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-4 md:flex-row md:items-center md:justify-between"
                           >
                             <div>
@@ -445,11 +491,79 @@ export default function Home() {
                               <p>{lead.postcode}</p>
                               <p>{new Date(lead.createdAt).toLocaleDateString("en-GB")}</p>
                             </div>
-                          </div>
+                          </button>
                         ))
                       )}
                     </div>
                   </div>
+
+                  {selectedLead && (
+                    <div className="rounded-[30px] border border-emerald-400/25 bg-slate-900/70 p-6">
+                      <div className="mb-5 flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead details</p>
+                          <h3 className="mt-2 text-2xl font-semibold text-white">{selectedLead.name}</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLead(null)}
+                          className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-slate-200 transition hover:border-white/25"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div className="grid gap-4 text-sm text-slate-200 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Email</p>
+                          <p className="mt-1">{selectedLead.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Phone</p>
+                          <p className="mt-1">{selectedLead.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Postcode</p>
+                          <p className="mt-1">{selectedLead.postcode}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Captured</p>
+                          <p className="mt-1">{new Date(selectedLead.createdAt).toLocaleString("en-GB")}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Estimated value</p>
+                          <p className="mt-1">
+                            {selectedLead.estimatedValue === null
+                              ? "Not provided"
+                              : formatCurrency(selectedLead.estimatedValue)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Recommendation</p>
+                          <p className="mt-1">{getRecommendation(selectedLead.responses)}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 border-t border-white/10 pt-5">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Project notes</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
+                          {selectedLead.notes || "No notes provided."}
+                        </p>
+                      </div>
+
+                      <div className="mt-6 border-t border-white/10 pt-5">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Questionnaire responses</p>
+                        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {Object.entries(selectedLead.responses).map(([question, answer]) => (
+                            <div key={question}>
+                              <dt className="text-xs uppercase tracking-[0.16em] text-slate-500">{question}</dt>
+                              <dd className="mt-1 text-sm text-slate-200">{answer}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 text-slate-300">

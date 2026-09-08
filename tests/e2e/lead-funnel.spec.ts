@@ -117,3 +117,80 @@ test('includes consultation as question seven and Home resets the completed flow
   await expect(page.getByText('0 of 7 answered')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Windows/ })).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('opens complete lead details and calculates analytics across all valid budgets', async ({ page }) => {
+  const email = `analytics-${Date.now()}@example.com`;
+  const lead = await prisma.lead.create({
+    data: {
+      name: 'Analytics Detail User',
+      email,
+      phone: '07700 555555',
+      postcode: 'M1 1AA',
+      notes: 'Please call about a full home upgrade.',
+      responses: {
+        goal: 'Windows',
+        issue: 'Drafts / heat loss',
+        urgency: 'Within 1-3 months',
+        property: 'House',
+        area: 'North of England',
+        budget: '£15k+',
+        consultation: 'Yes, book a consultation',
+      },
+    },
+  });
+
+  try {
+    const allLeads = await prisma.lead.findMany({ select: { responses: true } });
+    const amounts = {
+      'Under £3k': 2500,
+      '£3k - £8k': 5500,
+      '£8k - £15k': 11500,
+      '£15k+': 18000,
+    };
+    const validValues = allLeads
+      .map(({ responses }) => amounts[String((responses as Record<string, unknown>).budget) as keyof typeof amounts])
+      .filter((value): value is number => value !== undefined);
+    const expectedAverage = validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
+    const expectedBookedConsults = allLeads.filter(({ responses }) => (
+      String((responses as Record<string, unknown>).consultation) === 'Yes, book a consultation'
+    )).length;
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Business analytics' }).click();
+    await page.getByLabel('Business email').fill('business@nomoresalespeople.com');
+    await page.getByLabel('Password').fill('demo-password');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Business dashboard' })).toBeVisible();
+    await expect(page.getByText(new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      maximumFractionDigits: 0,
+    }).format(expectedAverage))).toBeVisible();
+    await expect(
+      page.getByText('Booked consults').locator('..').getByText(String(expectedBookedConsults), { exact: true }),
+    ).toBeVisible();
+
+    const exportResponsePromise = page.waitForResponse((response) => (
+      response.url().endsWith('/api/business/export') && response.request().method() === 'GET'
+    ));
+    await page.getByRole('button', { name: 'Export CSV' }).click();
+    const exportResponse = await exportResponsePromise;
+    expect(exportResponse.status()).toBe(200);
+    expect(exportResponse.headers()['content-type']).toContain('text/csv');
+    const exportedCsv = await page.request.get('/api/business/export');
+    expect(await exportedCsv.text()).toContain('Analytics Detail User');
+
+    await page.getByRole('button', { name: 'Open details for Analytics Detail User' }).click();
+    const detailPanel = page.getByRole('heading', { name: 'Analytics Detail User' }).locator('../../..');
+    await expect(detailPanel).toBeVisible();
+    await expect(detailPanel.getByText(email)).toBeVisible();
+    await expect(detailPanel.getByText('07700 555555')).toBeVisible();
+    await expect(detailPanel.getByText('Please call about a full home upgrade.')).toBeVisible();
+    await expect(detailPanel.getByText('Full Home Upgrade Package')).toBeVisible();
+    await expect(detailPanel.getByText('Yes, book a consultation')).toBeVisible();
+    await expect(detailPanel.getByText('£15k+')).toBeVisible();
+  } finally {
+    await prisma.lead.delete({ where: { id: lead.id } });
+  }
+});

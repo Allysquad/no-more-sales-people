@@ -25,10 +25,10 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm install"
 Copy-Item .env.example .env
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:generate"
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:up"
-powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:migrate -- --name init"
+powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
 ```
 
-The migration command is only needed the first time, or after a schema change. If migrations already exist, use `npm run db:migrate` without adding another `--name`.
+The deploy command applies committed migrations, removes old `demo-lead-*` records, and creates 10 fresh randomized demo leads. Real leads are preserved. Run it again after a schema change or whenever you want a clean demo dataset.
 
 ### Start the services
 
@@ -86,6 +86,17 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:generate"
 ```
 
 The local database uses the `DATABASE_URL` in `.env`. To move to Supabase later, keep the Prisma schema and migrations, replace `DATABASE_URL` with the Supabase PostgreSQL connection string, and apply the migrations against that database. The application code does not need to change.
+
+### Run the app in Docker
+
+For a production-like local run, build and start the Next.js app container alongside PostgreSQL:
+
+```powershell
+docker compose up --build -d
+powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
+```
+
+Open `http://localhost:3000`. The `web` container uses the Compose service name `postgres` for its database connection. The deploy command applies migrations and seeds 10 demo leads idempotently. Stop the containerized app and database with `docker compose down`.
 
 ## Project structure
 

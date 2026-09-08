@@ -6,10 +6,29 @@ services:
       POSTGRES_DB: no_more_sales_people
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d no_more_sales_people"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://app:app_password@postgres:5432/no_more_sales_people?schema=public
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

@@ -24,6 +24,15 @@ powershell -ExecutionPolicy Bypass -NoLogo -File .\run-app.ps1
 
 Open [http://localhost:3000](http://localhost:3000).
 
+To run both the Next.js app and PostgreSQL in separate containers instead of using the host-based development server:
+
+```powershell
+docker compose up --build -d
+powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
+```
+
+The Next.js container is named `web` and connects to PostgreSQL through the internal `postgres` service name. `db:deploy` applies migrations, removes old `demo-lead-*` records, and creates 10 fresh randomized demo leads without touching real leads. Stop both containers with `docker compose down`.
+
 To stop the demo:
 
 ```powershell
@@ -121,6 +130,10 @@ Use these credentials in the login form:
 
 Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. The frontend calls these endpoints:
 
+Select a recent lead to open its full details, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
+
+Use **Export CSV** to download every current lead and its questionnaire responses as `leads.csv`.
+
 ```powershell
 Invoke-RestMethod `
   -Uri "http://localhost:3000/api/business/login" `
@@ -208,7 +221,8 @@ CI checks the generated inventory on pull requests. After a change reaches `main
 | `npm run db:down` | `docker compose down` |
 | `npm run db:generate` | `prisma generate` |
 | `npm run db:migrate` | `prisma migrate dev` |
-| `npm run db:deploy` | `prisma migrate deploy` |
+| `npm run db:deploy` | `prisma migrate deploy && npm run db:seed` |
+| `npm run db:seed` | `prisma db seed` |
 | `npm run test:db` | `node --test tests/lead-database.test.mjs` |
 | `npm run test:coverage` | `node --experimental-test-coverage --test tests/lead-store.test.mjs tests/lead-database.test.mjs` |
 | `npm run test:e2e` | `playwright test` |
