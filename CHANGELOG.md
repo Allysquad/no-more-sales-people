@@ -12,6 +12,7 @@ This update continues to strengthen the lead qualification prototype for a home 
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-09: seed demo leads and export analytics (Alli)
 - 2026-09-09: preserve questionnaire flow state (Alli)
 - 2026-09-08: add business login and gated analytics (Alli)
 - 2026-09-08: Add end-to-end lead funnel test (Alli)
