@@ -12,6 +12,7 @@ This update continues to strengthen the lead qualification prototype for a home 
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-09: add lead deletion and side details panel (Alli)
 - 2026-09-09: seed demo leads and export analytics (Alli)
 - 2026-09-09: preserve questionnaire flow state (Alli)
 - 2026-09-08: add business login and gated analytics (Alli)
@@ -30,4 +31,4 @@ This update continues to strengthen the lead qualification prototype for a home 
 - Review the flow with business stakeholders and refine messaging for conversion.
 - Prepare production deployment and lead routing for live traffic.
 
-### Last updated: 2026-09-08
+### Last updated: 2026-09-09
