@@ -13,6 +13,27 @@ const names = [
   'Arthur Bailey',
   'Lily Cooper',
   'Henry Richardson',
+  'Mia Foster',
+  'Charlie Murphy',
+  'Sophia Gray',
+  'Oscar Chapman',
+  'Grace Wilson',
+  'Jack Thompson',
+  'Ella Watson',
+  'Harry Davies',
+  'Poppy Evans',
+  'Leo Roberts',
+  'Isabella Walker',
+  'Jacob Robinson',
+  'Emily Wright',
+  'Finley White',
+  'Sienna Harris',
+  'Teddy Lewis',
+  'Evie Clarke',
+  'Archie Young',
+  'Daisy Hall',
+  'Freddie Allen',
+  'Florence King',
 ];
 const goals = ['Windows', 'Doors', 'Both', 'Conservatory / extension'];
 const issues = ['Drafts / heat loss', 'Security / break-ins', 'Looks / outdated style', 'Noise / sound insulation'];
@@ -24,11 +45,27 @@ const budgets = ['Under £3k', '£3k - £8k', '£8k - £15k', '£15k+'];
 const pick = (values) => values[Math.floor(Math.random() * values.length)];
 
 async function main() {
+  const previousDemoLeads = await prisma.lead.findMany({
+    where: { email: { startsWith: 'demo-lead-' } },
+    select: { responses: true },
+  });
+  const previousConsultations = previousDemoLeads.filter((lead) => (
+    lead.responses?.consultation === 'Yes, book a consultation'
+  )).length;
   const deleted = await prisma.lead.deleteMany({
     where: { email: { startsWith: 'demo-lead-' } },
   });
+  const leadCount = 25;
+  const possibleConsultationCounts = Array.from({ length: leadCount + 1 }, (_, index) => index)
+    .filter((count) => count !== previousConsultations);
+  const consultationCount = pick(possibleConsultationCounts);
+  const consultationIndexes = new Set(
+    Array.from({ length: leadCount }, (_, index) => index)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, consultationCount),
+  );
 
-  for (let index = 1; index <= 10; index += 1) {
+  for (let index = 1; index <= leadCount; index += 1) {
     const email = `demo-lead-${String(index).padStart(2, '0')}@example.com`;
 
     await prisma.lead.create({
@@ -45,7 +82,7 @@ async function main() {
           property: pick(properties),
           area: pick(areas),
           budget: pick(budgets),
-          consultation: Math.random() > 0.45
+          consultation: consultationIndexes.has(index - 1)
             ? 'Yes, book a consultation'
             : 'No thanks, just show my recommendation',
         },
@@ -54,7 +91,7 @@ async function main() {
     });
   }
 
-  console.log(`Demo lead seed complete: ${deleted.count} old demo leads removed, 10 fresh demo leads created.`);
+  console.log(`Demo lead seed complete: ${deleted.count} old demo leads removed, ${leadCount} fresh demo leads created with ${consultationCount} consultation requests.`);
 }
 
 main()

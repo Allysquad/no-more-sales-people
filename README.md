@@ -28,7 +28,7 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:up"
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
 ```
 
-The deploy command applies committed migrations, removes old `demo-lead-*` records, and creates 10 fresh randomized demo leads. Real leads are preserved. Run it again after a schema change or whenever you want a clean demo dataset.
+The deploy command applies committed migrations, removes old `demo-lead-*` records, and creates 25 fresh randomized demo leads with a different consultation-request total on each run. Real leads are preserved. Run it again after a schema change or whenever you want a clean demo dataset.
 
 ### Start the services
 

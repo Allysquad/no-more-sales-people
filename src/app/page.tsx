@@ -20,10 +20,21 @@ type BusinessUser = {
   email: string;
 };
 
+type LeadRating = "Bronze" | "Silver" | "Gold" | "Platinum";
+
 type AnalyticsSummary = {
   totalLeads: number;
   bookedConsults: number;
   averageOrderValue: number;
+  urgentLeads: number;
+  averageUrgentLeadValue: number;
+  breakdowns: {
+    goals: Array<{ label: string; count: number }>;
+    urgency: Array<{ label: string; count: number }>;
+    budgets: Array<{ label: string; count: number }>;
+    areas: Array<{ label: string; count: number }>;
+    ratings: Array<{ label: string; count: number }>;
+  };
   recentLeads: Array<{
     id: string;
     name: string;
@@ -35,6 +46,7 @@ type AnalyticsSummary = {
     postcode: string;
     responses: Record<string, string>;
     estimatedValue: number | null;
+    rating: LeadRating;
   }>;
 };
 
@@ -148,6 +160,35 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const getRatingStyles = (rating: LeadRating) => {
+  switch (rating) {
+    case "Platinum":
+      return {
+        badge: "border-fuchsia-300/70 bg-fuchsia-400/20 text-fuchsia-100 shadow-lg shadow-fuchsia-950/30",
+        row: "border-fuchsia-300/60 bg-fuchsia-500/10 shadow-lg shadow-fuchsia-950/20 hover:border-fuchsia-200",
+        panel: "border-fuchsia-300/45 bg-fuchsia-500/10",
+      };
+    case "Gold":
+      return {
+        badge: "border-amber-300/70 bg-amber-400/20 text-amber-100 shadow-md shadow-amber-950/20",
+        row: "border-amber-300/50 bg-amber-500/10 shadow-md shadow-amber-950/15 hover:border-amber-200",
+        panel: "border-amber-300/35 bg-amber-500/10",
+      };
+    case "Silver":
+      return {
+        badge: "border-slate-300/50 bg-slate-300/15 text-slate-100",
+        row: "border-slate-300/30 bg-slate-400/5 hover:border-slate-200/70",
+        panel: "border-slate-300/25 bg-slate-400/5",
+      };
+    default:
+      return {
+        badge: "border-orange-300/40 bg-orange-400/10 text-orange-200",
+        row: "border-orange-300/20 bg-orange-500/5 hover:border-orange-200/60",
+        panel: "border-orange-300/20 bg-orange-500/5",
+      };
+  }
+};
+
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -163,6 +204,7 @@ export default function Home() {
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isExportingLeads, setIsExportingLeads] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
+  const [businessSection, setBusinessSection] = useState<"summary" | "dashboard">("summary");
 
   const currentQuestion = questions[currentIndex];
 
@@ -444,9 +486,18 @@ export default function Home() {
               <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 p-5">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead analytics</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Business dashboard</h2>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">
+                    {businessSection === "summary" ? "Lead summary view" : "Analytics dashboard"}
+                  </h2>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBusinessSection((section) => section === "summary" ? "dashboard" : "summary")}
+                    className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/20"
+                  >
+                    {businessSection === "summary" ? "Analytics dashboard" : "Lead summary view"}
+                  </button>
                   <button
                     type="button"
                     onClick={handleExportLeads}
@@ -465,13 +516,84 @@ export default function Home() {
                 </div>
               </div>
 
-              {isLoadingAnalytics ? (
+              {businessSection === "dashboard" ? (
+                <div className="space-y-6">
+                  <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                    <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Pipeline shape</p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">What your leads are asking for</h3>
+                    <p className="mt-2 text-sm text-slate-400">
+                      A simple view of demand, timing, budget, and coverage across all captured leads.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {[
+                      ["Product goals", analytics?.breakdowns.goals ?? [], "bg-sky-400"],
+                      ["Urgency", analytics?.breakdowns.urgency ?? [], "bg-amber-400"],
+                      ["Budget bands", analytics?.breakdowns.budgets ?? [], "bg-emerald-400"],
+                      ["Areas", analytics?.breakdowns.areas ?? [], "bg-rose-400"],
+                      ["Lead ratings", analytics?.breakdowns.ratings ?? [], "bg-violet-400"],
+                    ].map(([title, breakdown, barColor]) => {
+                      const items = breakdown as Array<{ label: string; count: number }>;
+                      const maximum = Math.max(...items.map((item) => item.count), 1);
+
+                      return (
+                        <div key={title as string} className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                          <h3 className="text-lg font-semibold text-white">{title as string}</h3>
+                          <div className="mt-5 space-y-4">
+                            {items.map((item) => (
+                              <div key={item.label}>
+                                <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                                  <span className="truncate text-slate-200">{item.label}</span>
+                                  <span className="font-medium text-white">{item.count}</span>
+                                </div>
+                                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                                  <div
+                                    className={`h-full rounded-full ${barColor as string}`}
+                                    style={{ width: `${(item.count / maximum) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Lead volume</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{analytics?.totalLeads ?? 0}</p>
+                      <p className="mt-2 text-sm text-slate-400">All captured enquiries</p>
+                    </div>
+                    <div className="rounded-[26px] border border-amber-400/30 bg-amber-500/10 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-amber-200">Hot lead share</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">
+                        {analytics && analytics.totalLeads > 0
+                          ? `${Math.round((analytics.urgentLeads / analytics.totalLeads) * 100)}%`
+                          : "0%"}
+                      </p>
+                      <p className="mt-2 text-sm text-amber-100/80">Marked urgent</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Consultation rate</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">
+                        {analytics && analytics.totalLeads > 0
+                          ? `${Math.round((analytics.bookedConsults / analytics.totalLeads) * 100)}%`
+                          : "0%"}
+                      </p>
+                      <p className="mt-2 text-sm text-slate-400">Leads requesting a call</p>
+                    </div>
+                  </div>
+                </div>
+              ) : isLoadingAnalytics ? (
                 <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 text-slate-300">
                   Loading analytics...
                 </div>
               ) : analytics ? (
                 <>
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5">
                       <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Qualified leads</p>
                       <p className="mt-3 text-3xl font-semibold text-white">{analytics.totalLeads}</p>
@@ -484,6 +606,13 @@ export default function Home() {
                       <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Average value</p>
                       <p className="mt-3 text-3xl font-semibold text-white">
                         {formatCurrency(analytics.averageOrderValue)}
+                      </p>
+                    </div>
+                    <div className="rounded-[26px] border border-amber-400/30 bg-amber-500/10 p-5">
+                      <p className="text-xs uppercase tracking-[0.22em] text-amber-200">Hot leads</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{analytics.urgentLeads}</p>
+                      <p className="mt-2 text-sm text-amber-100/80">
+                        {formatCurrency(analytics.averageUrgentLeadValue)} average value
                       </p>
                     </div>
                   </div>
@@ -509,12 +638,17 @@ export default function Home() {
                               aria-label={`Open details for ${lead.name}`}
                               className={`flex min-h-24 w-full flex-col gap-2 rounded-2xl border p-4 text-left transition md:flex-row md:items-center md:justify-between ${
                                 selectedLead?.id === lead.id
-                                  ? "border-emerald-400/60 bg-emerald-500/10"
-                                  : "border-white/10 bg-slate-950/60 hover:border-sky-400/60"
+                                  ? "border-emerald-400/70 bg-emerald-500/10"
+                                  : getRatingStyles(lead.rating).row
                               }`}
                             >
                               <div className="min-w-0">
-                                <p className="truncate font-medium text-white">{lead.name}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate font-medium text-white">{lead.name}</p>
+                                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${getRatingStyles(lead.rating).badge}`}>
+                                    {lead.rating}
+                                  </span>
+                                </div>
                                 <p className="truncate text-sm text-slate-300">{lead.email}</p>
                               </div>
                               <div className="shrink-0 text-sm text-slate-300 md:text-right">
@@ -529,7 +663,7 @@ export default function Home() {
                     </div>
 
                     {selectedLead ? (
-                    <div className="min-w-0 rounded-[30px] border border-emerald-400/25 bg-slate-900/70 p-6">
+                    <div className={`min-w-0 rounded-[30px] border p-6 ${getRatingStyles(selectedLead.rating).panel}`}>
                       <div className="mb-5 flex items-start justify-between gap-4">
                         <div>
                           <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead details</p>
@@ -581,6 +715,12 @@ export default function Home() {
                         <div>
                           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Recommendation</p>
                           <p className="mt-1">{getRecommendation(selectedLead.responses)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Lead rating</p>
+                          <p className={`mt-1 font-semibold ${getRatingStyles(selectedLead.rating).badge.split(" ").find((style) => style.startsWith("text-")) ?? "text-white"}`}>
+                            {selectedLead.rating}
+                          </p>
                         </div>
                       </div>
 

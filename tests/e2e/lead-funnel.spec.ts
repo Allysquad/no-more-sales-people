@@ -130,7 +130,7 @@ test('opens complete lead details and calculates analytics across all valid budg
       responses: {
         goal: 'Windows',
         issue: 'Drafts / heat loss',
-        urgency: 'Within 1-3 months',
+        urgency: 'Urgent - ASAP',
         property: 'House',
         area: 'North of England',
         budget: '£15k+',
@@ -154,6 +154,15 @@ test('opens complete lead details and calculates analytics across all valid budg
     const expectedBookedConsults = allLeads.filter(({ responses }) => (
       String((responses as Record<string, unknown>).consultation) === 'Yes, book a consultation'
     )).length;
+    const urgentResponses = allLeads.filter(({ responses }) => (
+      String((responses as Record<string, unknown>).urgency) === 'Urgent - ASAP'
+    ));
+    const urgentValues = urgentResponses
+      .map(({ responses }) => amounts[String((responses as Record<string, unknown>).budget) as keyof typeof amounts])
+      .filter((value): value is number => value !== undefined);
+    const expectedUrgentAverage = urgentValues.length > 0
+      ? urgentValues.reduce((sum, value) => sum + value, 0) / urgentValues.length
+      : 0;
 
     await page.goto('/');
     await page.getByRole('button', { name: 'Business analytics' }).click();
@@ -161,7 +170,7 @@ test('opens complete lead details and calculates analytics across all valid budg
     await page.getByLabel('Password').fill('demo-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
 
-    await expect(page.getByRole('heading', { name: 'Business dashboard' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Lead summary view' })).toBeVisible();
     await expect(page.getByText(new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
@@ -170,6 +179,20 @@ test('opens complete lead details and calculates analytics across all valid budg
     await expect(
       page.getByText('Booked consults').locator('..').getByText(String(expectedBookedConsults), { exact: true }),
     ).toBeVisible();
+    const hotLeadsCard = page.getByText('Hot leads').locator('..');
+    await expect(hotLeadsCard.getByText(String(urgentResponses.length), { exact: true })).toBeVisible();
+    await expect(hotLeadsCard.getByText(
+      `${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(expectedUrgentAverage)} average value`,
+    )).toBeVisible();
+
+    await page.getByRole('button', { name: 'Analytics dashboard' }).click();
+    await expect(page.getByRole('heading', { name: 'Analytics dashboard' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product goals' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Urgency' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Lead ratings' })).toBeVisible();
+    await expect(page.getByText('Hot lead share')).toBeVisible();
+    await page.getByRole('button', { name: 'Lead summary view' }).click();
+    await expect(page.getByRole('heading', { name: 'Lead summary view' })).toBeVisible();
 
     const exportResponsePromise = page.waitForResponse((response) => (
       response.url().endsWith('/api/business/export') && response.request().method() === 'GET'
@@ -181,7 +204,9 @@ test('opens complete lead details and calculates analytics across all valid budg
     const exportedCsv = await page.request.get('/api/business/export');
     expect(await exportedCsv.text()).toContain('Analytics Detail User');
 
-    await page.getByRole('button', { name: 'Open details for Analytics Detail User' }).click();
+    const platinumLead = page.getByRole('button', { name: 'Open details for Analytics Detail User' });
+    await expect(platinumLead).toHaveClass(/border-fuchsia/);
+    await platinumLead.click();
     const detailPanel = page.getByRole('heading', { name: 'Analytics Detail User' }).locator('../../..');
     await expect(detailPanel).toBeVisible();
     await expect(detailPanel.getByText(email)).toBeVisible();
@@ -190,6 +215,7 @@ test('opens complete lead details and calculates analytics across all valid budg
     await expect(detailPanel.getByText('Full Home Upgrade Package')).toBeVisible();
     await expect(detailPanel.getByText('Yes, book a consultation')).toBeVisible();
     await expect(detailPanel.getByText('£15k+')).toBeVisible();
+    await expect(detailPanel.getByText('Platinum')).toBeVisible();
 
     page.once('dialog', (dialog) => dialog.accept());
     await detailPanel.getByRole('button', { name: 'Delete lead' }).click();

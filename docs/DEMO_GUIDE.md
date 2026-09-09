@@ -31,7 +31,7 @@ docker compose up --build -d
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
 ```
 
-The Next.js container is named `web` and connects to PostgreSQL through the internal `postgres` service name. `db:deploy` applies migrations, removes old `demo-lead-*` records, and creates 10 fresh randomized demo leads without touching real leads. Stop both containers with `docker compose down`.
+The Next.js container is named `web` and connects to PostgreSQL through the internal `postgres` service name. `db:deploy` applies migrations, removes old `demo-lead-*` records, and creates 25 fresh randomized demo leads with a different consultation-request total on each run without touching real leads. Stop both containers with `docker compose down`.
 
 To stop the demo:
 
@@ -130,7 +130,7 @@ Use these credentials in the login form:
 
 Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. The frontend calls these endpoints:
 
-Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. Use **Delete lead** in that panel to remove a lead after confirmation. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
+The default **Lead summary view** shows the **Hot leads** card with the number of leads marked **Urgent - ASAP** and their average estimated value, making the high-priority opportunity visible at a glance. Each recent lead also receives a Bronze, Silver, Gold, or Platinum rating based on budget and urgency. Platinum is reserved for leads that are urgent, request a consultation, and select the £15k+ budget; the other tiers increase with budget value and urgency. Use **Analytics dashboard** to see simple graphical breakdowns for product goals, urgency, budget bands, areas, and lead ratings, plus hot-lead share and consultation rate. Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. Use **Delete lead** in that panel to remove a lead after confirmation. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
 
 Use **Export CSV** to download every current lead and its questionnaire responses as `leads.csv`.
 
