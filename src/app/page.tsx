@@ -162,6 +162,7 @@ export default function Home() {
   const [selectedLead, setSelectedLead] = useState<AnalyticsSummary["recentLeads"][number] | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isExportingLeads, setIsExportingLeads] = useState(false);
+  const [isDeletingLead, setIsDeletingLead] = useState(false);
 
   const currentQuestion = questions[currentIndex];
 
@@ -246,6 +247,31 @@ export default function Home() {
       setLoginError(message);
     } finally {
       setIsExportingLeads(false);
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!selectedLead || !window.confirm(`Delete the lead for ${selectedLead.name}?`)) {
+      return;
+    }
+
+    setIsDeletingLead(true);
+
+    try {
+      const response = await fetch(`/api/business/leads/${selectedLead.id}`, { method: "DELETE" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to delete lead.");
+      }
+
+      setSelectedLead(null);
+      await loadAnalytics();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete lead.";
+      setLoginError(message);
+    } finally {
+      setIsDeletingLead(false);
     }
   };
 
@@ -462,43 +488,48 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
-                    <div className="mb-5 flex items-center justify-between gap-3">
-                      <h3 className="text-xl font-semibold text-white">Recent leads</h3>
-                      <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                        Updated live
-                      </span>
+                  <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+                    <div className="min-w-0 rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                      <div className="mb-5 flex items-center justify-between gap-3">
+                        <h3 className="text-xl font-semibold text-white">Recent leads</h3>
+                        <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                          Updated live
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {analytics.recentLeads.length === 0 ? (
+                          <p className="text-slate-300">No leads have been captured yet.</p>
+                        ) : (
+                          analytics.recentLeads.map((lead) => (
+                            <button
+                              key={lead.id}
+                              type="button"
+                              onClick={() => setSelectedLead(lead)}
+                              aria-label={`Open details for ${lead.name}`}
+                              className={`flex min-h-24 w-full flex-col gap-2 rounded-2xl border p-4 text-left transition md:flex-row md:items-center md:justify-between ${
+                                selectedLead?.id === lead.id
+                                  ? "border-emerald-400/60 bg-emerald-500/10"
+                                  : "border-white/10 bg-slate-950/60 hover:border-sky-400/60"
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-white">{lead.name}</p>
+                                <p className="truncate text-sm text-slate-300">{lead.email}</p>
+                              </div>
+                              <div className="shrink-0 text-sm text-slate-300 md:text-right">
+                                <p>{lead.goal}</p>
+                                <p>{lead.postcode}</p>
+                                <p>{new Date(lead.createdAt).toLocaleDateString("en-GB")}</p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-3">
-                      {analytics.recentLeads.length === 0 ? (
-                        <p className="text-slate-300">No leads have been captured yet.</p>
-                      ) : (
-                        analytics.recentLeads.map((lead) => (
-                          <button
-                            key={lead.id}
-                            type="button"
-                            onClick={() => setSelectedLead(lead)}
-                            aria-label={`Open details for ${lead.name}`}
-                            className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-4 md:flex-row md:items-center md:justify-between"
-                          >
-                            <div>
-                              <p className="font-medium text-white">{lead.name}</p>
-                              <p className="text-sm text-slate-300">{lead.email}</p>
-                            </div>
-                            <div className="text-sm text-slate-300 md:text-right">
-                              <p>{lead.goal}</p>
-                              <p>{lead.postcode}</p>
-                              <p>{new Date(lead.createdAt).toLocaleDateString("en-GB")}</p>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {selectedLead && (
-                    <div className="rounded-[30px] border border-emerald-400/25 bg-slate-900/70 p-6">
+                    {selectedLead ? (
+                    <div className="min-w-0 rounded-[30px] border border-emerald-400/25 bg-slate-900/70 p-6">
                       <div className="mb-5 flex items-start justify-between gap-4">
                         <div>
                           <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead details</p>
@@ -512,6 +543,15 @@ export default function Home() {
                           Close
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteLead}
+                        disabled={isDeletingLead}
+                        className="mb-5 w-full rounded-full border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isDeletingLead ? "Deleting..." : "Delete lead"}
+                      </button>
 
                       <div className="grid gap-4 text-sm text-slate-200 sm:grid-cols-2">
                         <div>
@@ -563,7 +603,12 @@ export default function Home() {
                         </dl>
                       </div>
                     </div>
-                  )}
+                    ) : (
+                      <div className="min-h-64 rounded-[30px] border border-dashed border-white/15 bg-slate-900/40 p-6 text-slate-400">
+                        Select a recent lead to view its details.
+                      </div>
+                    )}
+                    </div>
                 </>
               ) : (
                 <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 text-slate-300">

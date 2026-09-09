@@ -190,7 +190,11 @@ test('opens complete lead details and calculates analytics across all valid budg
     await expect(detailPanel.getByText('Full Home Upgrade Package')).toBeVisible();
     await expect(detailPanel.getByText('Yes, book a consultation')).toBeVisible();
     await expect(detailPanel.getByText('£15k+')).toBeVisible();
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await detailPanel.getByRole('button', { name: 'Delete lead' }).click();
+    await expect(page.getByRole('button', { name: 'Open details for Analytics Detail User' })).toHaveCount(0);
   } finally {
-    await prisma.lead.delete({ where: { id: lead.id } });
+    await prisma.lead.deleteMany({ where: { id: lead.id } });
   }
 });

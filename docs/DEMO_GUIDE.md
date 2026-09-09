@@ -130,7 +130,7 @@ Use these credentials in the login form:
 
 Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. The frontend calls these endpoints:
 
-Select a recent lead to open its full details, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
+Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. Use **Delete lead** in that panel to remove a lead after confirmation. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
 
 Use **Export CSV** to download every current lead and its questionnaire responses as `leads.csv`.
 
