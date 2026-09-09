@@ -12,6 +12,7 @@ This update continues to strengthen the lead qualification prototype for a home 
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-09: add lead ratings and varied demo data (Alli)
 - 2026-09-09: add lead deletion and side details panel (Alli)
 - 2026-09-09: seed demo leads and export analytics (Alli)
 - 2026-09-09: preserve questionnaire flow state (Alli)
@@ -23,8 +24,6 @@ This update continues to strengthen the lead qualification prototype for a home 
 - 2026-09-08: Add next steps tracker and reminder workflow (Alli)
 - 2026-09-08: Polish changelog for stakeholder demo (Alli)
 - 2026-09-08: Add automated changelog workflow (Alli)
-- 2026-09-08: Add business-facing summary changelog (Alli)
-- 2026-09-08: Initial app scaffold and lead qualification prototype (Alli)
 
 ### Next milestone
 - Connect the enquiry form to a real backend, CRM, or email workflow.
