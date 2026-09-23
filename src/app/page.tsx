@@ -1,17 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 type ViewMode = "home" | "business";
+type Theme = "current" | "light" | "dark";
 
 type Question = {
   id: string;
   prompt: string;
   helper: string;
-  answers: { id: string; label: string; tone?: string }[];
+  answers: { id: string; label: string; icon: string; tone?: string }[];
 };
 
 type BusinessUser = {
@@ -21,6 +22,36 @@ type BusinessUser = {
 };
 
 type LeadRating = "Bronze" | "Silver" | "Gold" | "Platinum";
+
+function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
+  return (
+    <details className="theme-switcher relative z-40 rounded-full border border-white/10 bg-slate-900/60 text-xs text-slate-200">
+      <summary className="cursor-pointer rounded-full px-3 py-2 font-medium outline-none transition hover:border-sky-400">
+        <span className="sr-only">Colour theme: </span>
+        Theme
+      </summary>
+      <div className="theme-switcher-menu absolute right-0 z-50 mt-2 min-w-32 rounded-xl border border-white/10 bg-slate-900 p-1 shadow-xl">
+        {[
+          ["current", "Standard"],
+          ["light", "White"],
+          ["dark", "Dark"],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={(event) => {
+              onChange(value as Theme);
+              event.currentTarget.closest("details")?.removeAttribute("open");
+            }}
+            className="theme-switcher-option block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 transition hover:bg-white/10"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 type AnalyticsSummary = {
   totalLeads: number;
@@ -56,10 +87,10 @@ const questions: Question[] = [
     prompt: "What are you looking to improve?",
     helper: "Choose the main reason for getting in touch.",
     answers: [
-      { id: "windows", label: "Windows" },
-      { id: "doors", label: "Doors" },
-      { id: "both", label: "Both" },
-      { id: "conservatory", label: "Conservatory / extension" },
+      { id: "windows", label: "Windows", icon: "🪟" },
+      { id: "doors", label: "Doors", icon: "🚪" },
+      { id: "both", label: "Both", icon: "🏠" },
+      { id: "conservatory", label: "Conservatory / extension", icon: "🌿" },
     ],
   },
   {
@@ -67,10 +98,10 @@ const questions: Question[] = [
     prompt: "What is the biggest issue right now?",
     helper: "This helps us tailor the right product and approach.",
     answers: [
-      { id: "drafts", label: "Drafts / heat loss" },
-      { id: "security", label: "Security / break-ins" },
-      { id: "appearance", label: "Looks / outdated style" },
-      { id: "noise", label: "Noise / sound insulation" },
+      { id: "drafts", label: "Drafts / heat loss", icon: "🌬️" },
+      { id: "security", label: "Security / break-ins", icon: "🛡️" },
+      { id: "appearance", label: "Looks / outdated style", icon: "✨" },
+      { id: "noise", label: "Noise / sound insulation", icon: "🔇" },
     ],
   },
   {
@@ -78,9 +109,9 @@ const questions: Question[] = [
     prompt: "How quickly do you need this sorted?",
     helper: "We’ll match your schedule and lead time.",
     answers: [
-      { id: "asap", label: "Urgent - ASAP" },
-      { id: "months", label: "Within 1-3 months" },
-      { id: "exploring", label: "Just researching" },
+      { id: "asap", label: "Urgent - ASAP", icon: "⚡" },
+      { id: "months", label: "Within 1-3 months", icon: "📅" },
+      { id: "exploring", label: "Just researching", icon: "🔎" },
     ],
   },
   {
@@ -88,10 +119,10 @@ const questions: Question[] = [
     prompt: "What type of property do you have?",
     helper: "This helps recommend the best fit for your home.",
     answers: [
-      { id: "house", label: "House" },
-      { id: "bungalow", label: "Bungalow" },
-      { id: "flat", label: "Flat / apartment" },
-      { id: "commercial", label: "Commercial property" },
+      { id: "house", label: "House", icon: "🏡" },
+      { id: "bungalow", label: "Bungalow", icon: "🌳" },
+      { id: "flat", label: "Flat / apartment", icon: "🏢" },
+      { id: "commercial", label: "Commercial property", icon: "🏬" },
     ],
   },
   {
@@ -99,10 +130,10 @@ const questions: Question[] = [
     prompt: "Which area are you based in?",
     helper: "We’ll check local coverage and stock availability.",
     answers: [
-      { id: "north", label: "North of England" },
-      { id: "midlands", label: "Midlands" },
-      { id: "south", label: "South of England" },
-      { id: "online", label: "Not sure yet" },
+      { id: "scotland", label: "Scotland", icon: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
+      { id: "ireland", label: "Ireland", icon: "🇮🇪" },
+      { id: "england", label: "England", icon: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+      { id: "wales", label: "Wales", icon: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
     ],
   },
   {
@@ -110,10 +141,10 @@ const questions: Question[] = [
     prompt: "What budget are you working with?",
     helper: "This helps us suggest the best value route.",
     answers: [
-      { id: "low", label: "Under £3k" },
-      { id: "mid", label: "£3k - £8k" },
-      { id: "high", label: "£8k - £15k" },
-      { id: "premium", label: "£15k+" },
+      { id: "low", label: "Under £3k", icon: "💷" },
+      { id: "mid", label: "£3k - £8k", icon: "💰" },
+      { id: "high", label: "£8k - £15k", icon: "📈" },
+      { id: "premium", label: "£15k+", icon: "⭐" },
     ],
   },
   {
@@ -121,8 +152,8 @@ const questions: Question[] = [
     prompt: "Would you like to book a consultation?",
     helper: "A quick consultation helps us confirm the best next step for your home improvement project.",
     answers: [
-      { id: "yes", label: "Yes, book a consultation" },
-      { id: "no", label: "No thanks, just show my recommendation" },
+      { id: "yes", label: "Yes, book a consultation", icon: "📞" },
+      { id: "no", label: "No thanks, just show my recommendation", icon: "👀" },
     ],
   },
 ];
@@ -205,6 +236,22 @@ export default function Home() {
   const [isExportingLeads, setIsExportingLeads] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [businessSection, setBusinessSection] = useState<"summary" | "dashboard">("summary");
+  const [theme, setTheme] = useState<Theme>("current");
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("nosp-theme");
+
+    if (savedTheme !== "current" && savedTheme !== "light" && savedTheme !== "dark") return;
+
+    const restoreTheme = window.setTimeout(() => setTheme(savedTheme), 0);
+
+    return () => window.clearTimeout(restoreTheme);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("nosp-theme", theme);
+  }, [theme]);
 
   const currentQuestion = questions[currentIndex];
 
@@ -399,9 +446,9 @@ export default function Home() {
 
   if (currentView === "business") {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
+      <main data-theme={theme} className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+          <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -428,6 +475,7 @@ export default function Home() {
                 Business login
               </div>
             )}
+            <ThemeSwitcher onChange={setTheme} />
           </header>
 
           {!businessUser ? (
@@ -766,9 +814,9 @@ export default function Home() {
     const recommendation = getRecommendation(responses);
 
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
+      <main data-theme={theme} className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+          <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -788,6 +836,7 @@ export default function Home() {
             <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
               Lead Match Ready
             </span>
+            <ThemeSwitcher onChange={setTheme} />
           </header>
 
           <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -910,9 +959,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
+    <main data-theme={theme} className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+        <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -929,6 +978,7 @@ export default function Home() {
               Business analytics
             </button>
           </div>
+          <ThemeSwitcher onChange={setTheme} />
         </header>
 
         {submitMessage && (
@@ -943,7 +993,7 @@ export default function Home() {
         <section className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-lg sm:p-8">
           <div className="mb-6">
             <div className="mb-4 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-300">
-              <span>Qualification flow</span>
+              <span>Progress</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
@@ -977,27 +1027,35 @@ export default function Home() {
                     : "border-white/10 bg-slate-800/90"
                 }`}
               >
-                <span className="block text-base font-medium text-slate-50">{answer.label}</span>
-                <span className="mt-2 block text-sm text-slate-400 group-hover:text-slate-300">
-                  {answer.tone ?? "Recommended for your next step"}
+                <span className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-xl leading-none"
+                  >
+                    {answer.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-base font-medium text-slate-50">{answer.label}</span>
+                    <span className="mt-2 block text-sm text-slate-400 group-hover:text-slate-300">
+                      {answer.tone ?? "Recommended for your next step"}
+                    </span>
+                  </span>
                 </span>
               </button>
             ))}
           </div>
 
           <div className="mt-8 flex items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => currentIndex > 0 && setCurrentIndex((index) => index - 1)}
-              disabled={currentIndex === 0}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Back
-            </button>
+            {currentIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => setCurrentIndex((index) => index - 1)}
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25"
+              >
+                Back
+              </button>
+            )}
 
-            <p className="text-sm text-slate-300">
-              {Object.keys(responses).length} of {questions.length} answered
-            </p>
           </div>
         </section>
       </div>

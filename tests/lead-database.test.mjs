@@ -22,7 +22,7 @@ test('stores every lead field and questionnaire response in PostgreSQL', async (
       issue: 'Drafts / heat loss',
       urgency: 'Within 1-3 months',
       property: 'House',
-      area: 'North of England',
+      area: 'Scotland',
       budget: '£8k - £15k',
     },
   };

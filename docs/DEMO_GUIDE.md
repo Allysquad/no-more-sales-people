@@ -57,7 +57,7 @@ The seven qualification areas are:
 - Main issue: heat loss, security, appearance, or noise
 - Urgency: ASAP, within 1-3 months, or researching
 - Property type: house, bungalow, flat/apartment, or commercial
-- Area: north, Midlands, south, or unsure
+- Area: Scotland, Ireland, England, or Wales
 - Budget: under £3k, £3k-£8k, £8k-£15k, or £15k+
 - Consultation: book a consultation or continue to the recommendation
 
@@ -155,7 +155,10 @@ Check that PostgreSQL is running and migrations are applied:
 ```powershell
 docker compose ps
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npx prisma migrate status"
+npm run test:preflight
 ```
+
+The preflight reports whether Docker is stopped or PostgreSQL itself is unavailable before database-dependent tests run.
 
 The current schema contains the `Lead` and `BusinessUser` tables. See [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) for the diagram and field reference.
 
@@ -223,9 +226,10 @@ CI checks the generated inventory on pull requests. After a change reaches `main
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy && npm run db:seed` |
 | `npm run db:seed` | `prisma db seed` |
-| `npm run test:db` | `node --test tests/lead-database.test.mjs` |
+| `npm run test:preflight` | `node scripts/check-test-dependencies.mjs` |
+| `npm run test:db` | `npm run test:preflight && node --test tests/lead-database.test.mjs` |
 | `npm run test:coverage` | `node --experimental-test-coverage --test tests/lead-store.test.mjs tests/lead-database.test.mjs` |
-| `npm run test:e2e` | `playwright test` |
+| `npm run test:e2e` | `npm run test:preflight && playwright test` |
 | `npm run docs:demo` | `node scripts/update-demo-guide.mjs` |
 | `npm run docs:demo:check` | `node scripts/update-demo-guide.mjs --check` |
 <!-- END GENERATED PROJECT INVENTORY -->

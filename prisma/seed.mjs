@@ -39,7 +39,7 @@ const goals = ['Windows', 'Doors', 'Both', 'Conservatory / extension'];
 const issues = ['Drafts / heat loss', 'Security / break-ins', 'Looks / outdated style', 'Noise / sound insulation'];
 const urgencies = ['Urgent - ASAP', 'Within 1-3 months', 'Just researching'];
 const properties = ['House', 'Bungalow', 'Flat / apartment', 'Commercial property'];
-const areas = ['North of England', 'Midlands', 'South of England', 'Not sure yet'];
+const areas = ['Scotland', 'Ireland', 'England', 'Wales'];
 const budgets = ['Under £3k', '£3k - £8k', '£8k - £15k', '£15k+'];
 
 const pick = (values) => values[Math.floor(Math.random() * values.length)];

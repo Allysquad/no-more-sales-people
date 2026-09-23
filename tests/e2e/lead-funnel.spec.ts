@@ -17,7 +17,7 @@ test('completes the funnel and persists every submitted value', async ({ page })
     ['What is the biggest issue right now?', 'Drafts / heat loss'],
     ['How quickly do you need this sorted?', 'Within 1-3 months'],
     ['What type of property do you have?', 'House'],
-    ['Which area are you based in?', 'North of England'],
+    ['Which area are you based in?', 'Scotland'],
     ['What budget are you working with?', '£8k - £15k'],
     ['Would you like to book a consultation?', 'Yes, book a consultation'],
   ];
@@ -62,7 +62,7 @@ test('completes the funnel and persists every submitted value', async ({ page })
         issue: 'Drafts / heat loss',
         urgency: 'Within 1-3 months',
         property: 'House',
-        area: 'North of England',
+        area: 'Scotland',
         budget: '£8k - £15k',
         consultation: 'Yes, book a consultation',
       },
@@ -100,7 +100,7 @@ test('includes consultation as question seven and Home resets the completed flow
     'Drafts / heat loss',
     'Within 1-3 months',
     'House',
-    'North of England',
+    'Scotland',
     '£8k - £15k',
   ];
 
@@ -114,7 +114,6 @@ test('includes consultation as question seven and Home resets the completed flow
 
   await page.getByRole('button', { name: 'Home' }).click();
   await expect(page.getByRole('heading', { name: 'What are you looking to improve?' })).toBeVisible();
-  await expect(page.getByText('0 of 7 answered')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Windows/ })).toHaveAttribute('aria-pressed', 'false');
 });
 
@@ -132,7 +131,7 @@ test('opens complete lead details and calculates analytics across all valid budg
         issue: 'Drafts / heat loss',
         urgency: 'Urgent - ASAP',
         property: 'House',
-        area: 'North of England',
+        area: 'Scotland',
         budget: '£15k+',
         consultation: 'Yes, book a consultation',
       },

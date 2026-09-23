@@ -13,9 +13,10 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy && npm run db:seed",
     "db:seed": "prisma db seed",
-    "test:db": "node --test tests/lead-database.test.mjs",
+    "test:preflight": "node scripts/check-test-dependencies.mjs",
+    "test:db": "npm run test:preflight && node --test tests/lead-database.test.mjs",
     "test:coverage": "node --experimental-test-coverage --test tests/lead-store.test.mjs tests/lead-database.test.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run test:preflight && playwright test",
     "docs:demo": "node scripts/update-demo-guide.mjs",
     "docs:demo:check": "node scripts/update-demo-guide.mjs --check"
   },
