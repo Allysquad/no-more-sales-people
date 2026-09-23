@@ -27,8 +27,6 @@ This update continues to strengthen the lead qualification prototype for a home 
 - 2026-09-08: Add PostgreSQL setup, schema docs, and CI (Alli)
 - 2026-09-08: Add next steps tracker, reminder workflow, and live lead submission (Alli)
 - 2026-09-08: Add next steps tracker and reminder workflow (Alli)
-- 2026-09-08: Polish changelog for stakeholder demo (Alli)
-- 2026-09-08: Add automated changelog workflow (Alli)
 
 ### Next milestone
 - Connect the enquiry form to a real backend, CRM, or email workflow.
