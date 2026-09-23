@@ -9,9 +9,14 @@ This update continues to strengthen the lead qualification prototype for a home 
 - Recommendation logic that routes prospects into a suitable product offering.
 - Lead capture form for name, email, phone, postcode, and project notes.
 - Business-facing summary so sales teams can review the opportunity quickly.
+- Authenticated customer facade with protected summary and export access.
+- Lead plans and accepted subscriptions with country, rating, discount, and locked pricing rules.
+- Bruno API collection and automated coverage for subscription pricing and lead-plan filtering.
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-23: Add authenticated lead subscriptions (Alli)
+- 2026-09-23: Refine lead qualification experience (Alli)
 - 2026-09-09: add lead ratings and varied demo data (Alli)
 - 2026-09-09: add lead deletion and side details panel (Alli)
 - 2026-09-09: seed demo leads and export analytics (Alli)
@@ -30,4 +35,4 @@ This update continues to strengthen the lead qualification prototype for a home 
 - Review the flow with business stakeholders and refine messaging for conversion.
 - Prepare production deployment and lead routing for live traffic.
 
-### Last updated: 2026-09-09
+### Last updated: 2026-09-23
