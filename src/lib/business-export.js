@@ -15,9 +15,8 @@ const getLeadRating = (responses) => {
   const urgencyScore = { "Urgent - ASAP": 2, "Within 1-3 months": 1, "Just researching": 0 };
   const budget = String(responses?.budget ?? "");
   const urgency = String(responses?.urgency ?? "");
-  const consultation = String(responses?.consultation ?? "");
 
-  if (budget === "£15k+" && urgency === "Urgent - ASAP" && consultation === "Yes, book a consultation") return "PLATINUM";
+  if (budget === "£15k+" && urgency === "Urgent - ASAP") return "PLATINUM";
 
   const score = (budgetScore[budget] ?? 0) + (urgencyScore[urgency] ?? 0);
   if (score >= 5) return "GOLD";
@@ -25,17 +24,22 @@ const getLeadRating = (responses) => {
   return "BRONZE";
 };
 
+const ratingRank = { BRONZE: 1, SILVER: 2, GOLD: 3, PLATINUM: 4 };
+
 const isLeadAvailableToPlan = (lead, plan) => {
   const country = String(lead.responses?.area ?? "").toUpperCase().replaceAll(" ", "_");
+  const leadRank = ratingRank[getLeadRating(lead.responses)] ?? 0;
+  const highestPlanRank = Math.max(...plan.ratings.map((rating) => ratingRank[rating] ?? 0));
+
   return (plan.type === "ALL_COUNTRIES" || plan.countries.includes(country))
-    && plan.ratings.includes(getLeadRating(lead.responses));
+    && leadRank <= highestPlanRank;
 };
 
 export const getBusinessLeadsCsv = async (prisma, plan) => {
-  const allLeads = await prisma.lead.findMany({ orderBy: { createdAt: "desc" } });
+  const allLeads = await prisma.lead.findMany({ where: { completed: true }, orderBy: { completedAt: "desc" } });
   const leads = allLeads.filter((lead) => isLeadAvailableToPlan(lead, plan));
   const headers = [
-    "id", "name", "email", "phone", "postcode", "notes", "createdAt", "goal", "issue", "urgency",
+    "id", "name", "email", "phone", "postcode", "notes", "createdAt", "completedAt", "goal", "issue", "urgency",
     "property", "area", "budget", "estimatedValue", "consultation",
   ];
   const rows = leads.map((lead) => {
@@ -43,7 +47,7 @@ export const getBusinessLeadsCsv = async (prisma, plan) => {
     const budget = String(responses?.budget ?? "");
 
     return [
-      lead.id, lead.name, lead.email, lead.phone, lead.postcode, lead.notes, lead.createdAt.toISOString(),
+      lead.id, lead.name, lead.email, lead.phone, lead.postcode, lead.notes, lead.createdAt.toISOString(), (lead.completedAt ?? lead.createdAt).toISOString(),
       responses?.goal, responses?.issue, responses?.urgency, responses?.property, responses?.area, budget,
       amountMap[budget], responses?.consultation,
     ].map(csvValue).join(",");

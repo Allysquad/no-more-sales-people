@@ -3,23 +3,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const getLeadRating = (responses: Record<string, unknown>) => {
-  if (
-    responses.budget === '£15k+'
-    && responses.urgency === 'Urgent - ASAP'
-    && responses.consultation === 'Yes, book a consultation'
-  ) return 'PLATINUM';
-
-  const budgetScore = { 'Under £3k': 1, '£3k - £8k': 2, '£8k - £15k': 3, '£15k+': 4 };
-  const urgencyScore = { 'Urgent - ASAP': 2, 'Within 1-3 months': 1, 'Just researching': 0 };
-  const score = (budgetScore[String(responses.budget) as keyof typeof budgetScore] ?? 0)
-    + (urgencyScore[String(responses.urgency) as keyof typeof urgencyScore] ?? 0);
-
-  if (score >= 5) return 'GOLD';
-  if (score >= 3) return 'SILVER';
-  return 'BRONZE';
-};
-
 test.afterAll(async () => {
   await prisma.$disconnect();
 });
@@ -36,7 +19,6 @@ test('completes the funnel and persists every submitted value', async ({ page })
     ['What type of property do you have?', 'House'],
     ['Which area are you based in?', 'Scotland'],
     ['What budget are you working with?', '£8k - £15k'],
-    ['Would you like to book a consultation?', 'Yes, book a consultation'],
   ];
 
   for (const [question, answer] of steps) {
@@ -44,7 +26,7 @@ test('completes the funnel and persists every submitted value', async ({ page })
     await page.locator('button').filter({ hasText: answer }).first().click();
   }
 
-  await expect(page.getByRole('heading', { name: 'Full Home Upgrade Package' })).toBeVisible();
+  await expect(page.getByLabel('Full name')).toBeVisible();
 
   await page.getByLabel('Full name').fill('E2E Test User');
   await page.getByLabel('Email').fill(email);
@@ -53,14 +35,14 @@ test('completes the funnel and persists every submitted value', async ({ page })
   await page.getByLabel('Project notes').fill('End-to-end persistence test');
 
   const responsePromise = page.waitForResponse((response) => (
-    response.url().endsWith('/api/leads') && response.request().method() === 'POST'
+    response.url().includes('/api/leads') && ['POST', 'PUT'].includes(response.request().method())
   ));
 
-  await page.getByRole('button', { name: 'Send my enquiry' }).click();
+  await page.getByRole('button', { name: 'Send my details' }).click();
 
   const response = await responsePromise;
-  expect(response.status()).toBe(201);
-  await expect(page.getByText('Your enquiry has been submitted successfully.')).toBeVisible();
+  expect([200, 201]).toContain(response.status());
+  await expect(page.getByRole('heading', { name: 'Thank you for your information' })).toBeVisible();
   const body = await response.json();
   expect(body.lead.id).toBeTruthy();
 
@@ -81,7 +63,6 @@ test('completes the funnel and persists every submitted value', async ({ page })
         property: 'House',
         area: 'Scotland',
         budget: '£8k - £15k',
-        consultation: 'Yes, book a consultation',
       },
     });
   } finally {
@@ -109,7 +90,7 @@ test('keeps the selected answer highlighted when going back and allows it to cha
   await expect(windows).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('includes consultation as question seven and Home resets the completed flow', async ({ page }) => {
+test('opens customer details and Home resets the flow', async ({ page }) => {
   await page.goto('/');
 
   const answers = [
@@ -125,9 +106,7 @@ test('includes consultation as question seven and Home resets the completed flow
     await page.locator('button').filter({ hasText: answer }).first().click();
   }
 
-  await expect(page.getByRole('heading', { name: 'Would you like to book a consultation?' })).toBeVisible();
-  await page.getByRole('button', { name: /^No thanks/ }).click();
-  await expect(page.getByRole('heading', { name: 'Full Home Upgrade Package' })).toBeVisible();
+  await expect(page.getByLabel('Full name')).toBeVisible();
 
   await page.getByRole('button', { name: 'Home' }).click();
   await expect(page.getByRole('heading', { name: 'What are you looking to improve?' })).toBeVisible();
@@ -161,7 +140,6 @@ test('opens complete lead details and calculates analytics for an accepted subsc
         property: 'House',
         area: 'Scotland',
         budget: '£15k+',
-        consultation: 'Yes, book a consultation',
       },
     },
   });
@@ -175,7 +153,7 @@ test('opens complete lead details and calculates analytics for an accepted subsc
       '£15k+': 18000,
     };
     await page.goto('/');
-    await page.getByRole('button', { name: 'Business analytics' }).click();
+    await page.getByRole('button', { name: 'Dashboard' }).click();
     await page.getByLabel('Business email').fill('business@nomoresalespeople.com');
     await page.getByLabel('Password').fill('demo-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -185,9 +163,7 @@ test('opens complete lead details and calculates analytics for an accepted subsc
     await page.getByText('I accept this fixed monthly subscription price.').click();
     await page.getByRole('button', { name: 'Accept and view leads' }).click();
 
-    const filteredLeads = allLeads.filter(({ responses }) => (
-      getLeadRating(responses as Record<string, unknown>) === 'PLATINUM'
-    ));
+    const filteredLeads = allLeads;
     const validValues = filteredLeads
       .map(({ responses }) => amounts[String((responses as Record<string, unknown>).budget) as keyof typeof amounts])
       .filter((value): value is number => value !== undefined);
@@ -220,8 +196,8 @@ test('opens complete lead details and calculates analytics for an accepted subsc
       `${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(expectedUrgentAverage)} average value`,
     )).toBeVisible();
 
-    await page.getByRole('button', { name: 'Analytics dashboard' }).click();
-    await expect(page.getByRole('heading', { name: 'Analytics dashboard' })).toBeVisible();
+    await page.getByRole('button', { name: 'Analytics', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Product goals' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Urgency' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Lead ratings' })).toBeVisible();
@@ -248,7 +224,6 @@ test('opens complete lead details and calculates analytics for an accepted subsc
     await expect(detailPanel.getByText('07700 555555')).toBeVisible();
     await expect(detailPanel.getByText('Please call about a full home upgrade.')).toBeVisible();
     await expect(detailPanel.getByText('Full Home Upgrade Package')).toBeVisible();
-    await expect(detailPanel.getByText('Yes, book a consultation')).toBeVisible();
     await expect(detailPanel.getByText('£15k+')).toBeVisible();
     await expect(detailPanel.getByText('Platinum')).toBeVisible();
 

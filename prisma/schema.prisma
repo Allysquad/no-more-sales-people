@@ -35,6 +35,8 @@ model Lead {
   postcode  String
   notes     String   @default("")
   responses Json
+  completed Boolean  @default(true)
+  completedAt DateTime @default(now())
   createdAt DateTime @default(now())
 
   @@index([createdAt])

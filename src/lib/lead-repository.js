@@ -9,6 +9,7 @@ export async function saveLeadSubmissionToDatabase(payload) {
       postcode: payload.postcode,
       notes: payload.notes,
       responses: payload.responses,
+      completedAt: new Date(),
     },
   });
 }

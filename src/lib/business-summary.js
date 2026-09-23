@@ -8,12 +8,10 @@ const amountMap = {
 const getLeadRating = (responses) => {
   const budget = String(responses?.budget ?? "");
   const urgency = String(responses?.urgency ?? "");
-  const consultation = String(responses?.consultation ?? "");
 
   if (
     budget === "£15k+"
     && urgency === "Urgent - ASAP"
-    && consultation === "Yes, book a consultation"
   ) return "Platinum";
 
   const budgetScore = { "Under £3k": 1, "£3k - £8k": 2, "£8k - £15k": 3, "£15k+": 4 };
@@ -26,12 +24,15 @@ const getLeadRating = (responses) => {
 };
 
 const countryKey = (value) => String(value ?? "").toUpperCase().replaceAll(" ", "_");
+const ratingRank = { BRONZE: 1, SILVER: 2, GOLD: 3, PLATINUM: 4 };
 
 const isLeadAvailableToPlan = (lead, plan) => {
   const responses = lead.responses;
   const countryAllowed = plan.type === "ALL_COUNTRIES"
     || plan.countries.includes(countryKey(responses?.area));
-  const ratingAllowed = plan.ratings.includes(getLeadRating(responses).toUpperCase());
+  const leadRank = ratingRank[getLeadRating(responses).toUpperCase()] ?? 0;
+  const highestPlanRank = Math.max(...plan.ratings.map((rating) => ratingRank[rating] ?? 0));
+  const ratingAllowed = leadRank <= highestPlanRank;
 
   return countryAllowed && ratingAllowed;
 };
@@ -52,12 +53,13 @@ const buildBreakdown = (leads, field) => {
 export const getBusinessSummary = async (prisma, plan) => {
   const allLeads = await prisma.lead.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, phone: true, notes: true, postcode: true, createdAt: true, responses: true },
+    where: { completed: true },
+    select: { id: true, name: true, email: true, phone: true, notes: true, postcode: true, createdAt: true, completedAt: true, responses: true },
   });
   const availableLeads = allLeads.filter((lead) => isLeadAvailableToPlan(lead, plan));
   const totalLeads = availableLeads.length;
   const leadsForMetrics = availableLeads;
-  const recentLeads = availableLeads.slice(0, 5);
+  const recentLeads = availableLeads;
 
   const bookedConsults = leadsForMetrics.filter((lead) => (
     String(lead.responses?.consultation ?? "") === "Yes, book a consultation"
@@ -102,6 +104,7 @@ export const getBusinessSummary = async (prisma, plan) => {
       notes: lead.notes,
       postcode: lead.postcode,
       createdAt: lead.createdAt.toISOString(),
+      completedAt: (lead.completedAt ?? lead.createdAt).toISOString(),
       responses: lead.responses,
       estimatedValue: amountMap[String(lead.responses?.budget ?? "")] ?? null,
       rating: getLeadRating(lead.responses),

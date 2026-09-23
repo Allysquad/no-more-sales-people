@@ -45,25 +45,10 @@ const budgets = ['Under £3k', '£3k - £8k', '£8k - £15k', '£15k+'];
 const pick = (values) => values[Math.floor(Math.random() * values.length)];
 
 async function main() {
-  const previousDemoLeads = await prisma.lead.findMany({
-    where: { email: { startsWith: 'demo-lead-' } },
-    select: { responses: true },
-  });
-  const previousConsultations = previousDemoLeads.filter((lead) => (
-    lead.responses?.consultation === 'Yes, book a consultation'
-  )).length;
   const deleted = await prisma.lead.deleteMany({
     where: { email: { startsWith: 'demo-lead-' } },
   });
   const leadCount = 25;
-  const possibleConsultationCounts = Array.from({ length: leadCount + 1 }, (_, index) => index)
-    .filter((count) => count !== previousConsultations);
-  const consultationCount = pick(possibleConsultationCounts);
-  const consultationIndexes = new Set(
-    Array.from({ length: leadCount }, (_, index) => index)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, consultationCount),
-  );
 
   for (let index = 1; index <= leadCount; index += 1) {
     const email = `demo-lead-${String(index).padStart(2, '0')}@example.com`;
@@ -82,16 +67,15 @@ async function main() {
           property: pick(properties),
           area: pick(areas),
           budget: pick(budgets),
-          consultation: consultationIndexes.has(index - 1)
-            ? 'Yes, book a consultation'
-            : 'No thanks, just show my recommendation',
         },
+        completed: true,
+        completedAt: new Date(),
         createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
       },
     });
   }
 
-  console.log(`Demo lead seed complete: ${deleted.count} old demo leads removed, ${leadCount} fresh demo leads created with ${consultationCount} consultation requests.`);
+  console.log(`Demo lead seed complete: ${deleted.count} old demo leads removed, ${leadCount} fresh leads created.`);
 }
 
 main()

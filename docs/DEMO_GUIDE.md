@@ -43,7 +43,7 @@ powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:down"
 ## 2. Demo the qualification flow
 
 1. Open the app on the public **Home** screen; this is the default questionnaire experience.
-2. The top-right navigation includes a **Home** button and a **Business analytics** button.
+2. The top-right navigation includes a **Home** button and a **Dashboard** button.
 3. Select an answer for each of the seven questions.
 4. Point out the progress indicator and the changing question count.
 5. Use the Back button to demonstrate that the flow can move to an earlier question and keeps the previous answer highlighted.
@@ -59,7 +59,7 @@ The seven qualification areas are:
 - Property type: house, bungalow, flat/apartment, or commercial
 - Area: Scotland, Ireland, England, or Wales
 - Budget: under £3k, £3k-£8k, £8k-£15k, or £15k+
-- Consultation: book a consultation or continue to the recommendation
+- Customer details: enter contact details or skip for now
 
 ## 3. Demo the recommendation
 
@@ -119,7 +119,7 @@ The route validates the payload before Prisma writes it to PostgreSQL.
 
 ## 6. Demo the business login and analytics
 
-The app starts on the public lead questionnaire. To switch into the business-only view, click **Business analytics** in the top navigation. If no business user is signed in, the UI shows a login form instead of the dashboard.
+The app starts on the public lead questionnaire. To switch into the business-only view, click **Dashboard** in the top navigation. If no business user is signed in, the UI shows a login form instead of the dashboard.
 
 A seeded business user is included in the database so the analytics view can be demonstrated without setting up a separate auth system.
 
@@ -130,9 +130,9 @@ Use these credentials in the login form:
 
 Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. Login creates an HttpOnly session cookie; the summary and export requests use that cookie rather than sending the email or password again. The frontend calls these customer facade endpoints:
 
-If the account has no active subscription, the **Lead subscriptions** page appears first. Select one country, multiple countries, or all countries, choose Bronze, Silver, Gold, or Platinum, review the calculated monthly price, tick the acceptance box, and select **Accept and view leads**. The server recalculates the fixed price and only then enables summary and export. Multiple-country selections receive 10% off; all countries receives 20% off.
+If the account has no active subscription, the **Lead subscriptions** page appears first. Select one country, multiple countries, or all countries, choose Bronze, Silver, Gold, or Platinum, review the calculated monthly price, tick the acceptance box, and select **Accept and view leads**. The server recalculates the fixed price and only then enables summary and export. Multiple-country selections receive 10% off; all countries receives 20% off. **Dashboard** returns to the lead summary, while **Reject and go back** exits the subscription page without accepting a new price.
 
-The default **Lead summary view** shows the **Hot leads** card with the number of leads marked **Urgent - ASAP** and their average estimated value, making the high-priority opportunity visible at a glance. Each recent lead also receives a Bronze, Silver, Gold, or Platinum rating based on budget and urgency. Platinum is reserved for leads that are urgent, request a consultation, and select the £15k+ budget; the other tiers increase with budget value and urgency. The authenticated user's assigned lead plan filters the summary and export by its country scope and permitted ratings. Use **Analytics dashboard** to see simple graphical breakdowns for product goals, urgency, budget bands, areas, and lead ratings, plus hot-lead share and consultation rate. Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
+The default **Lead summary view** shows the **Hot leads** card with the number of leads marked **Urgent - ASAP** and their average estimated value, making the high-priority opportunity visible at a glance. Each recent lead also receives a Bronze, Silver, Gold, or Platinum rating based on budget and urgency. Platinum is reserved for leads with a £15k+ budget and urgent timing; the other tiers increase with budget value and urgency. The authenticated user's assigned lead plan filters the summary and export by its country scope and permitted ratings. Use **Analytics dashboard** to see simple graphical breakdowns for product goals, urgency, budget bands, areas, and lead ratings. Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, and every questionnaire response. **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
 
 Use **Export CSV** to download every current lead and its questionnaire responses as `leads.csv`.
 
@@ -187,7 +187,7 @@ npx playwright install chromium
 powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run test:e2e"
 ```
 
-This test completes the seven-question funnel in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
+This test completes the qualification flow and customer-details step in Chromium, checks the recommendation, submits the contact form through `/api/leads`, and verifies the returned lead was persisted in PostgreSQL.
 
 ## 9. Keep this guide current
 

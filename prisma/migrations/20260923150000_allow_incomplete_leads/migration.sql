@@ -1,0 +1,11 @@
+ALTER TABLE "Lead"
+  ALTER COLUMN "name" DROP NOT NULL,
+  ALTER COLUMN "email" DROP NOT NULL,
+  ALTER COLUMN "phone" DROP NOT NULL,
+  ALTER COLUMN "postcode" DROP NOT NULL;
+
+ALTER TABLE "Lead"
+  ADD COLUMN "completed" BOOLEAN NOT NULL DEFAULT false;
+
+UPDATE "Lead"
+SET "completed" = true;

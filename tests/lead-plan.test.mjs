@@ -31,7 +31,7 @@ const leads = [
     createdAt: new Date('2026-09-22T12:00:00Z'),
     responses: {
       area: 'England',
-      budget: '£15k+',
+      budget: '£8k - £15k',
       urgency: 'Urgent - ASAP',
       consultation: 'No thanks, just show my recommendation',
       goal: 'Doors',
@@ -53,6 +53,53 @@ const leads = [
       goal: 'Both',
     },
   },
+  {
+    id: 'wales-gold',
+    name: 'Wales Gold',
+    email: 'wales-gold@example.com',
+    phone: '07700 000004',
+    postcode: 'CF2 2AA',
+    notes: '',
+    createdAt: new Date('2026-09-20T12:00:00Z'),
+    responses: {
+      area: 'Wales',
+      budget: '£8k - £15k',
+      urgency: 'Urgent - ASAP',
+      consultation: 'No thanks, just show my recommendation',
+      goal: 'Windows',
+    },
+  },
+  {
+    id: 'wales-platinum',
+    name: 'Wales Platinum',
+    email: 'wales-platinum@example.com',
+    phone: '07700 000005',
+    postcode: 'CF3 3AA',
+    notes: '',
+    createdAt: new Date('2026-09-19T12:00:00Z'),
+    responses: {
+      area: 'Wales',
+      budget: '£15k+',
+      urgency: 'Urgent - ASAP',
+      consultation: 'No thanks, just show my recommendation',
+      goal: 'Both',
+    },
+  },
+  {
+    id: 'ireland-bronze',
+    name: 'Ireland Bronze',
+    email: 'ireland@example.com',
+    phone: '07700 000006',
+    postcode: 'D1 1AA',
+    notes: '',
+    createdAt: new Date('2026-09-18T12:00:00Z'),
+    responses: {
+      area: 'Ireland',
+      budget: 'Under £3k',
+      urgency: 'Just researching',
+      goal: 'Doors',
+    },
+  },
 ];
 
 const plan = {
@@ -60,7 +107,7 @@ const plan = {
   name: 'England and Wales Gold/Bronze',
   type: 'MULTIPLE_COUNTRIES',
   countries: ['ENGLAND', 'WALES'],
-  ratings: ['GOLD', 'BRONZE'],
+  ratings: ['GOLD'],
   monthlyPricePence: 9900,
   pricePerLeadPence: 2500,
 };
@@ -75,9 +122,31 @@ test('filters summary and export by plan country and rating', async () => {
   const summary = await getBusinessSummary(fakePrisma, plan);
   const csv = await getBusinessLeadsCsv(fakePrisma, plan);
 
-  assert.equal(summary.totalLeads, 2);
-  assert.deepEqual(summary.recentLeads.map((lead) => lead.name), ['England Gold', 'Wales Bronze']);
+  assert.equal(summary.totalLeads, 3);
+  assert.deepEqual(summary.recentLeads.map((lead) => lead.name), ['England Gold', 'Wales Bronze', 'Wales Gold']);
   assert.match(csv, /England Gold/);
   assert.match(csv, /Wales Bronze/);
+  assert.match(csv, /Wales Gold/);
   assert.doesNotMatch(csv, /Scotland Platinum/);
+});
+
+test('does not export higher-rated leads from an allowed country', async () => {
+  const goldWalesPlan = {
+    id: 'wales-gold-plan',
+    name: 'Wales Gold',
+    type: 'ONE_COUNTRY',
+    countries: ['WALES'],
+    ratings: ['GOLD'],
+    monthlyPricePence: 140000,
+    pricePerLeadPence: 2500,
+  };
+
+  const csv = await getBusinessLeadsCsv(fakePrisma, goldWalesPlan);
+
+  assert.match(csv, /Wales Gold/);
+  assert.match(csv, /Wales Bronze/);
+  assert.doesNotMatch(csv, /Wales Platinum/);
+  assert.doesNotMatch(csv, /Scotland Platinum/);
+  assert.doesNotMatch(csv, /England Gold/);
+  assert.doesNotMatch(csv, /Ireland Bronze/);
 });

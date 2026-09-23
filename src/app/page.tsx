@@ -15,15 +15,11 @@ type Question = {
   answers: { id: string; label: string; icon: string; tone?: string }[];
 };
 
-type BusinessUser = {
-  id: string;
-  name: string;
-  email: string;
-};
-
+type BusinessUser = { id: string; name: string; email: string };
 type SubscriptionType = "ONE_COUNTRY" | "MULTIPLE_COUNTRIES" | "ALL_COUNTRIES";
 type SubscriptionCountry = "SCOTLAND" | "IRELAND" | "ENGLAND" | "WALES";
 type SubscriptionRating = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+type LeadRating = "Bronze" | "Silver" | "Gold" | "Platinum";
 type ActiveSubscription = {
   id: string;
   type: SubscriptionType;
@@ -38,30 +34,13 @@ type SubscriptionOptions = {
   discounts: { multipleCountries: number; allCountries: number };
 };
 
-type LeadRating = "Bronze" | "Silver" | "Gold" | "Platinum";
-
 function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
   return (
     <details className="theme-switcher relative z-40 rounded-full border border-white/10 bg-slate-900/60 text-xs text-slate-200">
-      <summary className="cursor-pointer rounded-full px-3 py-2 font-medium outline-none transition hover:border-sky-400">
-        <span className="sr-only">Colour theme: </span>
-        Theme
-      </summary>
+      <summary className="cursor-pointer rounded-full px-3 py-2 font-medium outline-none transition hover:border-sky-400">Theme</summary>
       <div className="theme-switcher-menu absolute right-0 z-50 mt-2 min-w-32 rounded-xl border border-white/10 bg-slate-900 p-1 shadow-xl">
-        {[
-          ["current", "Standard"],
-          ["light", "White"],
-          ["dark", "Dark"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={(event) => {
-              onChange(value as Theme);
-              event.currentTarget.closest("details")?.removeAttribute("open");
-            }}
-            className="theme-switcher-option block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 transition hover:bg-white/10"
-          >
+        {[["current", "Standard"], ["light", "White"], ["dark", "Dark"]].map(([value, label]) => (
+          <button key={value} type="button" onClick={(event) => { onChange(value as Theme); event.currentTarget.closest("details")?.removeAttribute("open"); }} className="theme-switcher-option block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 transition hover:bg-white/10">
             {label}
           </button>
         ))}
@@ -71,24 +50,13 @@ function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
 }
 
 type AnalyticsSummary = {
-  plan: {
-    type: SubscriptionType;
-    countries: SubscriptionCountry[];
-    ratings: string[];
-    monthlyPricePence: number;
-  };
+  plan: { type: SubscriptionType; countries: SubscriptionCountry[]; ratings: string[]; monthlyPricePence: number };
   totalLeads: number;
   bookedConsults: number;
   averageOrderValue: number;
   urgentLeads: number;
   averageUrgentLeadValue: number;
-  breakdowns: {
-    goals: Array<{ label: string; count: number }>;
-    urgency: Array<{ label: string; count: number }>;
-    budgets: Array<{ label: string; count: number }>;
-    areas: Array<{ label: string; count: number }>;
-    ratings: Array<{ label: string; count: number }>;
-  };
+  breakdowns: Record<string, Array<{ label: string; count: number }>>;
   recentLeads: Array<{
     id: string;
     name: string;
@@ -96,6 +64,7 @@ type AnalyticsSummary = {
     phone: string;
     notes: string;
     createdAt: string;
+    completedAt: string;
     goal: string;
     postcode: string;
     responses: Record<string, string>;
@@ -105,80 +74,25 @@ type AnalyticsSummary = {
 };
 
 const questions: Question[] = [
-  {
-    id: "goal",
-    prompt: "What are you looking to improve?",
-    helper: "Choose the main reason for getting in touch.",
-    answers: [
-      { id: "windows", label: "Windows", icon: "🪟" },
-      { id: "doors", label: "Doors", icon: "🚪" },
-      { id: "both", label: "Both", icon: "🏠" },
-      { id: "conservatory", label: "Conservatory / extension", icon: "🌿" },
-    ],
-  },
-  {
-    id: "issue",
-    prompt: "What is the biggest issue right now?",
-    helper: "This helps us tailor the right product and approach.",
-    answers: [
-      { id: "drafts", label: "Drafts / heat loss", icon: "🌬️" },
-      { id: "security", label: "Security / break-ins", icon: "🛡️" },
-      { id: "appearance", label: "Looks / outdated style", icon: "✨" },
-      { id: "noise", label: "Noise / sound insulation", icon: "🔇" },
-    ],
-  },
-  {
-    id: "urgency",
-    prompt: "How quickly do you need this sorted?",
-    helper: "We’ll match your schedule and lead time.",
-    answers: [
-      { id: "asap", label: "Urgent - ASAP", icon: "⚡" },
-      { id: "months", label: "Within 1-3 months", icon: "📅" },
-      { id: "exploring", label: "Just researching", icon: "🔎" },
-    ],
-  },
-  {
-    id: "property",
-    prompt: "What type of property do you have?",
-    helper: "This helps recommend the best fit for your home.",
-    answers: [
-      { id: "house", label: "House", icon: "🏡" },
-      { id: "bungalow", label: "Bungalow", icon: "🌳" },
-      { id: "flat", label: "Flat / apartment", icon: "🏢" },
-      { id: "commercial", label: "Commercial property", icon: "🏬" },
-    ],
-  },
-  {
-    id: "area",
-    prompt: "Which area are you based in?",
-    helper: "We’ll check local coverage and stock availability.",
-    answers: [
-      { id: "scotland", label: "Scotland", icon: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
-      { id: "ireland", label: "Ireland", icon: "🇮🇪" },
-      { id: "england", label: "England", icon: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-      { id: "wales", label: "Wales", icon: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
-    ],
-  },
-  {
-    id: "budget",
-    prompt: "What budget are you working with?",
-    helper: "This helps us suggest the best value route.",
-    answers: [
-      { id: "low", label: "Under £3k", icon: "💷" },
-      { id: "mid", label: "£3k - £8k", icon: "💰" },
-      { id: "high", label: "£8k - £15k", icon: "📈" },
-      { id: "premium", label: "£15k+", icon: "⭐" },
-    ],
-  },
-  {
-    id: "consultation",
-    prompt: "Would you like to book a consultation?",
-    helper: "A quick consultation helps us confirm the best next step for your home improvement project.",
-    answers: [
-      { id: "yes", label: "Yes, book a consultation", icon: "📞" },
-      { id: "no", label: "No thanks, just show my recommendation", icon: "👀" },
-    ],
-  },
+  { id: "goal", prompt: "What are you looking to improve?", helper: "Choose the main reason for getting in touch.", answers: [
+    { id: "windows", label: "Windows", icon: "🪟" }, { id: "doors", label: "Doors", icon: "🚪" }, { id: "both", label: "Both", icon: "🏠" }, { id: "conservatory", label: "Conservatory / extension", icon: "🌿" },
+  ] },
+  { id: "issue", prompt: "What is the biggest issue right now?", helper: "This helps us tailor the right product and approach.", answers: [
+    { id: "drafts", label: "Drafts / heat loss", icon: "🌬️" }, { id: "security", label: "Security / break-ins", icon: "🛡️" }, { id: "appearance", label: "Looks / outdated style", icon: "✨" }, { id: "noise", label: "Noise / sound insulation", icon: "🔇" },
+  ] },
+  { id: "urgency", prompt: "How quickly do you need this sorted?", helper: "We’ll match your schedule and lead time.", answers: [
+    { id: "asap", label: "Urgent - ASAP", icon: "⚡" }, { id: "months", label: "Within 1-3 months", icon: "📅" }, { id: "exploring", label: "Just researching", icon: "🔎" },
+  ] },
+  { id: "property", prompt: "What type of property do you have?", helper: "This helps recommend the best fit for your home.", answers: [
+    { id: "house", label: "House", icon: "🏡" }, { id: "bungalow", label: "Bungalow", icon: "🌳" }, { id: "flat", label: "Flat / apartment", icon: "🏢" }, { id: "commercial", label: "Commercial property", icon: "🏬" },
+  ] },
+  { id: "area", prompt: "Which area are you based in?", helper: "We’ll check local coverage and stock availability.", answers: [
+    { id: "scotland", label: "Scotland", icon: "🏴" }, { id: "ireland", label: "Ireland", icon: "🇮🇪" }, { id: "england", label: "England", icon: "🏴" }, { id: "wales", label: "Wales", icon: "🏴" },
+  ] },
+  { id: "budget", prompt: "What budget are you working with?", helper: "This helps us suggest the best value route.", answers: [
+    { id: "low", label: "Under £3k", icon: "💷" }, { id: "mid", label: "£3k - £8k", icon: "💰" }, { id: "high", label: "£8k - £15k", icon: "📈" }, { id: "premium", label: "£15k+", icon: "⭐" },
+  ] },
+  { id: "customerDetails", prompt: "Input customer details", helper: "Add your details so the business can follow up with the right recommendation.", answers: [] },
 ];
 
 const leadSchema = z.object({
@@ -246,7 +160,7 @@ const getRatingStyles = (rating: LeadRating) => {
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
-  const [isComplete, setIsComplete] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewMode>("home");
@@ -258,13 +172,19 @@ export default function Home() {
   const [selectedRating, setSelectedRating] = useState<SubscriptionRating>("BRONZE");
   const [acceptSubscriptionPrice, setAcceptSubscriptionPrice] = useState(false);
   const [isSavingSubscription, setIsSavingSubscription] = useState(false);
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginForm, setLoginForm] = useState({
+    email: "business@nomoresalespeople.com",
+    password: "demo-password",
+  });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [selectedLead, setSelectedLead] = useState<AnalyticsSummary["recentLeads"][number] | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isExportingLeads, setIsExportingLeads] = useState(false);
-  const [businessSection, setBusinessSection] = useState<"summary" | "dashboard">("summary");
+  const [businessSection, setBusinessSection] = useState<"summary" | "dashboard" | "detailed" | "subscription">("summary");
+  const [detailedRatingFilter, setDetailedRatingFilter] = useState<"ALL" | LeadRating>("ALL");
+  const [detailedAreaFilter, setDetailedAreaFilter] = useState("ALL");
+  const [detailedDateFilter, setDetailedDateFilter] = useState("");
   const [theme, setTheme] = useState<Theme>("current");
 
   useEffect(() => {
@@ -283,11 +203,12 @@ export default function Home() {
   }, [theme]);
 
   const currentQuestion = questions[currentIndex];
+  const isCustomerDetailsStep = currentIndex === questions.length - 1;
 
   const progress = useMemo(() => {
-    if (isComplete) return 100;
+    if (isCustomerDetailsStep) return 100;
     return (currentIndex / questions.length) * 100;
-  }, [currentIndex, isComplete]);
+  }, [currentIndex, isCustomerDetailsStep]);
 
   const form = useForm<LeadValues>({
     resolver: zodResolver(leadSchema),
@@ -303,7 +224,7 @@ export default function Home() {
   const resetHomeFlow = () => {
     setCurrentIndex(0);
     setResponses({});
-    setIsComplete(false);
+    setIsSubmitted(false);
     setSubmitMessage(null);
     form.reset();
     setCurrentView("home");
@@ -345,6 +266,7 @@ export default function Home() {
   const handleBusinessNav = async () => {
     if (businessUser) {
       setCurrentView("business");
+      setBusinessSection("summary");
       try {
         const activeSubscription = await loadSubscription();
         if (activeSubscription) await loadAnalytics();
@@ -359,19 +281,54 @@ export default function Home() {
     setAnalytics(null);
   };
 
-  const subscriptionPricePence = useMemo(() => {
-    if (!subscriptionOptions) return 0;
+  const handleRejectSubscription = async () => {
+    setLoginError(null);
+
+    if (!subscription) {
+      resetHomeFlow();
+      return;
+    }
+
+    setBusinessSection("summary");
+    await loadAnalytics();
+  };
+
+  const subscriptionPricing = useMemo(() => {
+    if (!subscriptionOptions) {
+      return { basePricePence: 0, ratingPricePence: 0, discountRate: 0, discountPence: 0, monthlyPricePence: 0 };
+    }
     const countries = subscriptionType === "ALL_COUNTRIES"
       ? subscriptionOptions.countries
       : subscriptionOptions.countries.filter((country) => selectedCountries.includes(country.value));
-    const base = countries.reduce((total, country) => total + country.basePricePence, 0);
+    const basePricePence = countries.reduce((total, country) => total + country.basePricePence, 0);
     const multiplier = subscriptionOptions.ratings.find((rating) => rating.value === selectedRating)?.multiplier ?? 1;
-    const discount = subscriptionType === "MULTIPLE_COUNTRIES"
+    const discountRate = subscriptionType === "MULTIPLE_COUNTRIES"
       ? subscriptionOptions.discounts.multipleCountries
       : subscriptionType === "ALL_COUNTRIES" ? subscriptionOptions.discounts.allCountries : 0;
+    const ratingPricePence = Math.round(basePricePence * multiplier);
+    const monthlyPricePence = Math.round(ratingPricePence * (1 - discountRate));
 
-    return Math.round(base * multiplier * (1 - discount));
+    return {
+      basePricePence,
+      ratingPricePence,
+      discountRate,
+      discountPence: ratingPricePence - monthlyPricePence,
+      monthlyPricePence,
+    };
   }, [selectedCountries, selectedRating, subscriptionOptions, subscriptionType]);
+
+  const detailedLeads = useMemo(() => {
+    const leads = analytics?.recentLeads ?? [];
+
+    return leads.filter((lead) => {
+      const area = String(lead.responses.area ?? "");
+      const matchesRating = detailedRatingFilter === "ALL" || lead.rating === detailedRatingFilter;
+      const matchesArea = detailedAreaFilter === "ALL" || area === detailedAreaFilter;
+      const matchesDate = !detailedDateFilter || lead.completedAt.slice(0, 10) === detailedDateFilter;
+
+      return matchesRating && matchesArea && matchesDate;
+    });
+  }, [analytics, detailedAreaFilter, detailedDateFilter, detailedRatingFilter]);
 
   const handleSubscriptionTypeChange = (type: SubscriptionType) => {
     setSubscriptionType(type);
@@ -379,6 +336,35 @@ export default function Home() {
     if (type === "MULTIPLE_COUNTRIES" && selectedCountries.length < 2) setSelectedCountries(["SCOTLAND", "WALES"]);
     if (type === "ALL_COUNTRIES") setSelectedCountries([]);
     setAcceptSubscriptionPrice(false);
+  };
+
+  const handleCountryToggle = (country: SubscriptionCountry) => {
+    setAcceptSubscriptionPrice(false);
+
+    if (subscriptionType === "ONE_COUNTRY") {
+      setSelectedCountries((current) => current.includes(country) ? [] : [country]);
+      return;
+    }
+
+    const nextCountries = selectedCountries.includes(country)
+      ? selectedCountries.filter((value) => value !== country)
+      : [...selectedCountries, country];
+
+    if (subscriptionType === "MULTIPLE_COUNTRIES" && nextCountries.length === 4) {
+      setSubscriptionType("ALL_COUNTRIES");
+    }
+
+    setSelectedCountries(nextCountries);
+  };
+
+  const openSubscription = () => {
+    if (subscription) {
+      setSubscriptionType(subscription.type);
+      setSelectedCountries(subscription.type === "ALL_COUNTRIES" ? [] : subscription.countries);
+      setSelectedRating(subscription.rating);
+    }
+    setAcceptSubscriptionPrice(false);
+    setBusinessSection("subscription");
   };
 
   const handleSaveSubscription = async () => {
@@ -401,6 +387,7 @@ export default function Home() {
       if (!response.ok) throw new Error(data.message || "Unable to save subscription.");
 
       setSubscription(data.subscription);
+      setBusinessSection("summary");
       await loadAnalytics();
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "Unable to save subscription.");
@@ -472,7 +459,7 @@ export default function Home() {
     setAnalytics(null);
   };
 
-  const handleAnswer = (answerId: string) => {
+  const handleAnswer = async (answerId: string) => {
     const selected = currentQuestion.answers.find((answer) => answer.id === answerId);
 
     if (!selected) {
@@ -485,8 +472,6 @@ export default function Home() {
       window.setTimeout(() => setCurrentIndex((index) => index + 1), 150);
       return;
     }
-
-    window.setTimeout(() => setIsComplete(true), 150);
   };
 
   const onSubmit = async (values: LeadValues) => {
@@ -512,9 +497,7 @@ export default function Home() {
       }
 
       setSubmitMessage("Your enquiry has been submitted successfully.");
-      setResponses({});
-      setCurrentIndex(0);
-      setIsComplete(false);
+      setIsSubmitted(true);
       form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit your enquiry.";
@@ -524,10 +507,52 @@ export default function Home() {
     }
   };
 
+  const customerDetailsForm = (
+    <form className="mt-4 grid gap-2 sm:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+      {([
+        ["name", "Full name", "Alex Smith", "text"],
+        ["email", "Email", "alex@email.com", "email"],
+        ["phone", "Phone", "07700 900123", "text"],
+        ["postcode", "Postcode", "M1 1AA", "text"],
+      ] as const).map(([field, label, placeholder, type]) => (
+        <div key={field}>
+          <label htmlFor={field} className="mb-1 block text-sm text-slate-200">{label}</label>
+          <input
+            id={field}
+            {...form.register(field)}
+            type={type}
+            className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-1.5 text-sm text-white outline-none transition focus:border-emerald-400"
+            placeholder={placeholder}
+          />
+          {form.formState.errors[field]?.message && (
+            <p className="mt-1 text-xs text-rose-300">{String(form.formState.errors[field]?.message)}</p>
+          )}
+        </div>
+      ))}
+      <div className="sm:col-span-2">
+        <label htmlFor="notes" className="mb-1 block text-sm text-slate-200">Project notes</label>
+        <textarea
+          id="notes"
+          {...form.register("notes")}
+          rows={1}
+          className="w-full resize-none rounded-xl border border-white/10 bg-slate-950/60 px-3 py-1.5 text-sm text-white outline-none transition focus:border-emerald-400"
+          placeholder="Tell us more about the problem you're trying to solve..."
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 sm:col-span-2"
+      >
+        {isSubmitting ? "Sending..." : "Send my details"}
+      </button>
+    </form>
+  );
+
   if (currentView === "business") {
     return (
-      <main data-theme={theme} className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+      <main data-theme={theme} className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
           <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <button
@@ -542,7 +567,7 @@ export default function Home() {
                 onClick={handleBusinessNav}
                 className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
               >
-                Business analytics
+                Dashboard
               </button>
             </div>
 
@@ -605,8 +630,17 @@ export default function Home() {
                 </button>
               </form>
             </section>
-          ) : !subscription ? (
+          ) : businessSection === "subscription" || !subscription ? (
             <section className="mx-auto max-w-4xl space-y-6">
+              <div
+                role="alert"
+                className="rounded-2xl border border-amber-300/50 bg-amber-500/10 px-5 py-4 text-amber-100"
+              >
+                <p className="font-semibold">You cannot receive or view leads yet</p>
+                <p className="mt-1 text-sm text-amber-100/80">
+                  Choose and accept a lead subscription below before you can access the dashboard or export leads.
+                </p>
+              </div>
               <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-lg">
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-300">Lead subscriptions</p>
                 <h1 className="mt-4 text-3xl font-semibold text-white">Choose the leads you want to receive</h1>
@@ -649,12 +683,7 @@ export default function Home() {
                             type="checkbox"
                             checked={subscriptionType === "ALL_COUNTRIES" || selectedCountries.includes(country.value)}
                             disabled={subscriptionType === "ALL_COUNTRIES"}
-                            onChange={() => {
-                              setAcceptSubscriptionPrice(false);
-                              setSelectedCountries((current) => current.includes(country.value)
-                                ? current.filter((value) => value !== country.value)
-                                : [...current, country.value]);
-                            }}
+                            onChange={() => handleCountryToggle(country.value)}
                             className="h-5 w-5 accent-emerald-400"
                           />
                         </label>
@@ -663,7 +692,15 @@ export default function Home() {
 
                     <h2 className="mt-8 text-xl font-semibold text-white">Lead rating</h2>
                     <div className="mt-4 grid gap-3 sm:grid-cols-4">
-                      {subscriptionOptions.ratings.map((rating) => (
+                      {subscriptionOptions.ratings.map((rating) => {
+                        const ratingDescriptions: Record<SubscriptionRating, string> = {
+                          BRONZE: "Lower budget or less urgent enquiries.",
+                          SILVER: "Mid-range budget and/or nearer-term enquiries.",
+                          GOLD: "Higher-value, urgent enquiries with a strong buying signal.",
+                          PLATINUM: "£15k+ budget and urgent timing.",
+                        };
+
+                        return (
                         <button
                           key={rating.value}
                           type="button"
@@ -672,15 +709,27 @@ export default function Home() {
                         >
                           <span className="block font-medium text-white">{rating.value}</span>
                           <span className="mt-1 block text-xs text-slate-400">{Math.round((rating.multiplier - 1) * 100)}% over Bronze</span>
+                          <span className="mt-2 block text-xs leading-5 text-slate-300">{ratingDescriptions[rating.value]}</span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
                   <aside className="h-fit rounded-[30px] border border-emerald-300/30 bg-emerald-500/10 p-6">
                     <p className="text-xs uppercase tracking-[0.25em] text-emerald-200">Subscription total</p>
-                    <p className="mt-3 text-4xl font-semibold text-white">{formatCurrency(subscriptionPricePence / 100)}</p>
+                    <p className="mt-3 text-4xl font-semibold text-white">{formatCurrency(subscriptionPricing.monthlyPricePence / 100)}</p>
                     <p className="mt-1 text-sm text-emerald-100/80">per month</p>
+                    <div className="mt-5 space-y-1 border-t border-emerald-300/20 pt-4 text-sm">
+                      <p className="flex justify-between gap-4 text-slate-300">
+                        <span>Price before discount</span>
+                        <span>{formatCurrency(subscriptionPricing.ratingPricePence / 100)}</span>
+                      </p>
+                      <p className="flex justify-between gap-4 font-medium text-emerald-200">
+                        <span>Discount ({Math.round(subscriptionPricing.discountRate * 100)}%)</span>
+                        <span>-{formatCurrency(subscriptionPricing.discountPence / 100)}</span>
+                      </p>
+                    </div>
                     <p className="mt-5 text-sm text-slate-200">
                       {subscriptionType === "ALL_COUNTRIES" ? "All countries" : selectedCountries.length ? selectedCountries.join(", ") : "Choose at least one country"} · {selectedRating}
                     </p>
@@ -692,10 +741,17 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={handleSaveSubscription}
-                      disabled={isSavingSubscription || !acceptSubscriptionPrice || subscriptionPricePence === 0}
+                      disabled={isSavingSubscription || !acceptSubscriptionPrice || subscriptionPricing.monthlyPricePence === 0}
                       className="mt-6 w-full rounded-full bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isSavingSubscription ? "Saving subscription..." : "Accept and view leads"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRejectSubscription}
+                      className="mt-3 w-full rounded-full border border-rose-400/50 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20"
+                    >
+                      Reject and go back
                     </button>
                   </aside>
                 </div>
@@ -707,16 +763,30 @@ export default function Home() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Lead analytics</p>
                   <h2 className="mt-2 text-2xl font-semibold text-white">
-                    {businessSection === "summary" ? "Lead summary view" : "Analytics dashboard"}
+                    {businessSection === "summary" ? "Lead summary view" : businessSection === "dashboard" ? "Analytics" : businessSection === "detailed" ? "Detailed view" : "Lead subscriptions"}
                   </h2>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
                   <button
                     type="button"
+                    onClick={openSubscription}
+                    className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/20"
+                  >
+                    Lead subscriptions
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setBusinessSection((section) => section === "summary" ? "dashboard" : "summary")}
                     className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/20"
                   >
-                    {businessSection === "summary" ? "Analytics dashboard" : "Lead summary view"}
+                    {businessSection === "summary" ? "Analytics" : "Lead summary view"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessSection("detailed")}
+                    className="rounded-full border border-violet-400/50 bg-violet-500/10 px-4 py-2 text-sm text-violet-200 transition hover:bg-violet-500/20"
+                  >
+                    Detailed view
                   </button>
                   <button
                     type="button"
@@ -805,6 +875,59 @@ export default function Home() {
                       </p>
                       <p className="mt-2 text-sm text-slate-400">Leads requesting a call</p>
                     </div>
+                  </div>
+                </div>
+              ) : businessSection === "detailed" ? (
+                <div className="space-y-6">
+                  <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-violet-300">All available leads</p>
+                        <h3 className="mt-2 text-xl font-semibold text-white">Detailed view</h3>
+                      </div>
+                      <p className="text-sm text-slate-400">{detailedLeads.length} matching leads</p>
+                    </div>
+                    <div className="mt-5 grid gap-3 md:grid-cols-3">
+                      <label className="text-sm text-slate-300">Rating
+                        <select value={detailedRatingFilter} onChange={(event) => setDetailedRatingFilter(event.target.value as "ALL" | LeadRating)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-white">
+                          <option value="ALL">All ratings</option>
+                          {(["Bronze", "Silver", "Gold", "Platinum"] as LeadRating[]).map((rating) => <option key={rating} value={rating}>{rating}</option>)}
+                        </select>
+                      </label>
+                      <label className="text-sm text-slate-300">Area
+                        <select value={detailedAreaFilter} onChange={(event) => setDetailedAreaFilter(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-white">
+                          <option value="ALL">All areas</option>
+                          {[...new Set((analytics?.recentLeads ?? []).map((lead) => String(lead.responses.area ?? "Not provided")))].map((area) => <option key={area} value={area}>{area}</option>)}
+                        </select>
+                      </label>
+                      <label className="text-sm text-slate-300">Date completed
+                        <input type="date" value={detailedDateFilter} onChange={(event) => setDetailedDateFilter(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-white" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {detailedLeads.length === 0 ? <p className="rounded-[30px] border border-dashed border-white/15 p-8 text-slate-400">No leads match these filters.</p> : detailedLeads.map((lead) => (
+                      <article key={lead.id} className={`rounded-[26px] border p-5 ${getRatingStyles(lead.rating).panel}`}>
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2"><h3 className="text-lg font-semibold text-white">{lead.name}</h3><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${getRatingStyles(lead.rating).badge}`}>{lead.rating}</span></div>
+                            <p className="mt-1 text-sm text-slate-300">{lead.email} · {lead.phone} · {lead.postcode}</p>
+                          </div>
+                          <p className="text-sm text-slate-300">Completed {new Date(lead.completedAt).toLocaleString("en-GB")}</p>
+                        </div>
+                        <div className="mt-4 grid gap-3 text-sm text-slate-200 sm:grid-cols-4">
+                          <p><span className="block text-xs uppercase text-slate-400">Area</span>{String(lead.responses.area ?? "Not provided")}</p>
+                          <p><span className="block text-xs uppercase text-slate-400">Goal</span>{lead.goal}</p>
+                          <p><span className="block text-xs uppercase text-slate-400">Budget</span>{String(lead.responses.budget ?? "Not provided")}</p>
+                          <p><span className="block text-xs uppercase text-slate-400">Urgency</span>{String(lead.responses.urgency ?? "Not provided")}</p>
+                        </div>
+                        <p className="mt-4 text-sm text-slate-300">{lead.notes || "No notes provided."}</p>
+                        <dl className="mt-4 grid gap-2 border-t border-white/10 pt-4 text-xs sm:grid-cols-3">
+                          {Object.entries(lead.responses).map(([key, value]) => <div key={key}><dt className="uppercase text-slate-500">{key}</dt><dd className="mt-1 text-slate-200">{value}</dd></div>)}
+                        </dl>
+                      </article>
+                    ))}
                   </div>
                 </div>
               ) : isLoadingAnalytics ? (
@@ -973,12 +1096,45 @@ export default function Home() {
     );
   }
 
-  if (isComplete) {
-    const recommendation = getRecommendation(responses);
-
+  if (isSubmitted) {
     return (
       <main data-theme={theme} className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl">
+          <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={resetHomeFlow}
+              className="rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-400"
+            >
+              Home
+            </button>
+            <ThemeSwitcher onChange={setTheme} />
+          </header>
+
+          <section className="rounded-[30px] border border-emerald-400/30 bg-emerald-500/10 p-8 text-center shadow-2xl shadow-emerald-950/30 sm:p-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">Details received</p>
+            <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Thank you for your information</h1>
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-200">
+              One of our industry-leading professionals in your area will contact you soon.
+            </p>
+            <button
+              type="button"
+              onClick={resetHomeFlow}
+              className="mt-8 rounded-full border border-sky-400/60 bg-sky-500/10 px-5 py-3 text-sm font-semibold text-sky-200 transition hover:bg-sky-500/20"
+            >
+              Begin another quote
+            </button>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (false) {
+
+    return (
+      <main data-theme={theme} className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
           <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <button
@@ -993,53 +1149,31 @@ export default function Home() {
                 onClick={handleBusinessNav}
                 className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
               >
-                Business analytics
+                Dashboard
               </button>
             </div>
-            <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
-              Lead Match Ready
-            </span>
             <ThemeSwitcher onChange={setTheme} />
           </header>
 
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-slate-950/30 backdrop-blur-sm sm:p-8">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">
-                Your recommendation
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                {recommendation}
-              </h1>
-              <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">
-                Based on your answers, this is the most appropriate route for your property and
-                timeline. We&apos;ve prepared a lead summary so your sales team can follow up with the
-                right offer and next steps.
-              </p>
-
-              <div className="mt-8 space-y-4">
-                {questions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="rounded-2xl border border-white/10 bg-slate-900/80 p-4"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      {question.prompt}
-                    </p>
-                    <p className="mt-2 text-base font-medium text-slate-100">
-                      {responses[question.id] ?? "Not answered yet"}
-                    </p>
-                  </div>
-                ))}
+          <section className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-lg sm:p-8">
+            <div className="mb-6">
+              <div className="mb-4 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-slate-300">
+                <span>Progress</span>
+                <span>100%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+                <div className="h-full w-full rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 to-emerald-300" />
               </div>
             </div>
 
-            <aside className="rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-sky-500/10 p-6 shadow-2xl shadow-emerald-950/20 sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
-                Book a consultation
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">Question 7 of 7</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Input customer details</h2>
+              <p className="mt-3 max-w-lg text-base leading-7 text-slate-300">
+                Add your details so one of our industry-leading professionals can contact you soon.
               </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white">Tell us about your project</h2>
 
-              <form className="mt-6 space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
                 <div>
                   <label htmlFor="name" className="mb-2 block text-sm text-slate-200">Full name</label>
                   <input
@@ -1049,7 +1183,7 @@ export default function Home() {
                     placeholder="Alex Smith"
                   />
                   {form.formState.errors.name && (
-                    <p className="mt-1 text-xs text-rose-300">{form.formState.errors.name.message}</p>
+                    <p className="mt-1 text-xs text-rose-300">{String(form.formState.errors.name?.message)}</p>
                   )}
                 </div>
 
@@ -1063,7 +1197,7 @@ export default function Home() {
                     placeholder="alex@email.com"
                   />
                   {form.formState.errors.email && (
-                    <p className="mt-1 text-xs text-rose-300">{form.formState.errors.email.message}</p>
+                    <p className="mt-1 text-xs text-rose-300">{String(form.formState.errors.email?.message)}</p>
                   )}
                 </div>
 
@@ -1076,7 +1210,7 @@ export default function Home() {
                     placeholder="07700 900123"
                   />
                   {form.formState.errors.phone && (
-                    <p className="mt-1 text-xs text-rose-300">{form.formState.errors.phone.message}</p>
+                    <p className="mt-1 text-xs text-rose-300">{String(form.formState.errors.phone?.message)}</p>
                   )}
                 </div>
 
@@ -1089,11 +1223,11 @@ export default function Home() {
                     placeholder="M1 1AA"
                   />
                   {form.formState.errors.postcode && (
-                    <p className="mt-1 text-xs text-rose-300">{form.formState.errors.postcode.message}</p>
+                    <p className="mt-1 text-xs text-rose-300">{String(form.formState.errors.postcode?.message)}</p>
                   )}
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label htmlFor="notes" className="mb-2 block text-sm text-slate-200">Project notes</label>
                   <textarea
                     id="notes"
@@ -1104,18 +1238,18 @@ export default function Home() {
                   />
                 </div>
 
-                {submitMessage && <p className="text-sm text-emerald-300">{submitMessage}</p>}
+                {submitMessage && <p className="text-sm text-emerald-300 sm:col-span-2">{submitMessage}</p>}
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70 sm:col-span-2"
                 >
-                  {isSubmitting ? "Sending..." : "Send my enquiry"}
+                  {isSubmitting ? "Sending..." : "Send my details"}
                 </button>
               </form>
-            </aside>
-          </div>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -1138,7 +1272,7 @@ export default function Home() {
               onClick={handleBusinessNav}
               className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
             >
-              Business analytics
+              Dashboard
             </button>
           </div>
           <ThemeSwitcher onChange={setTheme} />
@@ -1159,7 +1293,7 @@ export default function Home() {
               <span>Progress</span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-sky-400 via-emerald-400 to-emerald-300 transition-all duration-300"
                 style={{ width: `${progress}%` }}
@@ -1170,13 +1304,14 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">
             Question {currentIndex + 1}
           </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          <h2 className={`${isCustomerDetailsStep ? "mt-2 text-2xl" : "mt-4 text-3xl sm:text-4xl"} font-semibold tracking-tight text-white`}>
             {currentQuestion.prompt}
           </h2>
-          <p className="mt-3 max-w-lg text-base leading-7 text-slate-300">
+          <p className={`${isCustomerDetailsStep ? "mt-2 text-sm leading-6" : "mt-3 text-base leading-7"} max-w-lg text-slate-300`}>
             {currentQuestion.helper}
           </p>
 
+          {currentIndex === questions.length - 1 ? customerDetailsForm : (
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {currentQuestion.answers.map((answer) => (
               <button
@@ -1207,6 +1342,7 @@ export default function Home() {
               </button>
             ))}
           </div>
+          )}
 
           <div className="mt-8 flex items-center justify-between gap-4">
             {currentIndex > 0 && (
