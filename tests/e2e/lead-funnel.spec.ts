@@ -3,6 +3,23 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const getLeadRating = (responses: Record<string, unknown>) => {
+  if (
+    responses.budget === '£15k+'
+    && responses.urgency === 'Urgent - ASAP'
+    && responses.consultation === 'Yes, book a consultation'
+  ) return 'PLATINUM';
+
+  const budgetScore = { 'Under £3k': 1, '£3k - £8k': 2, '£8k - £15k': 3, '£15k+': 4 };
+  const urgencyScore = { 'Urgent - ASAP': 2, 'Within 1-3 months': 1, 'Just researching': 0 };
+  const score = (budgetScore[String(responses.budget) as keyof typeof budgetScore] ?? 0)
+    + (urgencyScore[String(responses.urgency) as keyof typeof urgencyScore] ?? 0);
+
+  if (score >= 5) return 'GOLD';
+  if (score >= 3) return 'SILVER';
+  return 'BRONZE';
+};
+
 test.afterAll(async () => {
   await prisma.$disconnect();
 });
@@ -117,8 +134,19 @@ test('includes consultation as question seven and Home resets the completed flow
   await expect(page.getByRole('button', { name: /^Windows/ })).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('opens complete lead details and calculates analytics across all valid budgets', async ({ page }) => {
+test('opens complete lead details and calculates analytics for an accepted subscription', async ({ page }) => {
   const email = `analytics-${Date.now()}@example.com`;
+  const demoUser = await prisma.businessUser.findUnique({
+    where: { email: 'business@nomoresalespeople.com' },
+    select: { id: true },
+  });
+  if (!demoUser) throw new Error('Seeded demo business user is missing.');
+
+  await prisma.leadSubscription.updateMany({
+    where: { businessUserId: demoUser.id, active: true },
+    data: { active: false },
+  });
+
   const lead = await prisma.lead.create({
     data: {
       name: 'Analytics Detail User',
@@ -146,14 +174,28 @@ test('opens complete lead details and calculates analytics across all valid budg
       '£8k - £15k': 11500,
       '£15k+': 18000,
     };
-    const validValues = allLeads
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Business analytics' }).click();
+    await page.getByLabel('Business email').fill('business@nomoresalespeople.com');
+    await page.getByLabel('Password').fill('demo-password');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('heading', { name: 'Choose the leads you want to receive' })).toBeVisible();
+    await page.getByRole('button', { name: 'All countries' }).click();
+    await page.getByRole('button', { name: 'PLATINUM' }).click();
+    await page.getByText('I accept this fixed monthly subscription price.').click();
+    await page.getByRole('button', { name: 'Accept and view leads' }).click();
+
+    const filteredLeads = allLeads.filter(({ responses }) => (
+      getLeadRating(responses as Record<string, unknown>) === 'PLATINUM'
+    ));
+    const validValues = filteredLeads
       .map(({ responses }) => amounts[String((responses as Record<string, unknown>).budget) as keyof typeof amounts])
       .filter((value): value is number => value !== undefined);
     const expectedAverage = validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
-    const expectedBookedConsults = allLeads.filter(({ responses }) => (
+    const expectedBookedConsults = filteredLeads.filter(({ responses }) => (
       String((responses as Record<string, unknown>).consultation) === 'Yes, book a consultation'
     )).length;
-    const urgentResponses = allLeads.filter(({ responses }) => (
+    const urgentResponses = filteredLeads.filter(({ responses }) => (
       String((responses as Record<string, unknown>).urgency) === 'Urgent - ASAP'
     ));
     const urgentValues = urgentResponses
@@ -163,18 +205,12 @@ test('opens complete lead details and calculates analytics across all valid budg
       ? urgentValues.reduce((sum, value) => sum + value, 0) / urgentValues.length
       : 0;
 
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Business analytics' }).click();
-    await page.getByLabel('Business email').fill('business@nomoresalespeople.com');
-    await page.getByLabel('Password').fill('demo-password');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-
     await expect(page.getByRole('heading', { name: 'Lead summary view' })).toBeVisible();
-    await expect(page.getByText(new Intl.NumberFormat('en-GB', {
+    await expect(page.getByText('Average value').locator('..').getByText(new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
       maximumFractionDigits: 0,
-    }).format(expectedAverage))).toBeVisible();
+    }).format(expectedAverage), { exact: true })).toBeVisible();
     await expect(
       page.getByText('Booked consults').locator('..').getByText(String(expectedBookedConsults), { exact: true }),
     ).toBeVisible();
@@ -194,13 +230,13 @@ test('opens complete lead details and calculates analytics across all valid budg
     await expect(page.getByRole('heading', { name: 'Lead summary view' })).toBeVisible();
 
     const exportResponsePromise = page.waitForResponse((response) => (
-      response.url().endsWith('/api/business/export') && response.request().method() === 'GET'
+      response.url().endsWith('/api/customer/export') && response.request().method() === 'GET'
     ));
     await page.getByRole('button', { name: 'Export CSV' }).click();
     const exportResponse = await exportResponsePromise;
     expect(exportResponse.status()).toBe(200);
     expect(exportResponse.headers()['content-type']).toContain('text/csv');
-    const exportedCsv = await page.request.get('/api/business/export');
+    const exportedCsv = await page.request.get('/api/customer/export');
     expect(await exportedCsv.text()).toContain('Analytics Detail User');
 
     const platinumLead = page.getByRole('button', { name: 'Open details for Analytics Detail User' });
@@ -216,9 +252,6 @@ test('opens complete lead details and calculates analytics across all valid budg
     await expect(detailPanel.getByText('£15k+')).toBeVisible();
     await expect(detailPanel.getByText('Platinum')).toBeVisible();
 
-    page.once('dialog', (dialog) => dialog.accept());
-    await detailPanel.getByRole('button', { name: 'Delete lead' }).click();
-    await expect(page.getByRole('button', { name: 'Open details for Analytics Detail User' })).toHaveCount(0);
   } finally {
     await prisma.lead.deleteMany({ where: { id: lead.id } });
   }

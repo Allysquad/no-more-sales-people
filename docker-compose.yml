@@ -26,6 +26,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://app:app_password@postgres:5432/no_more_sales_people?schema=public
+      CUSTOMER_SESSION_SECRET: local-development-session-secret-change-me
       NODE_ENV: production
     ports:
       - "3000:3000"

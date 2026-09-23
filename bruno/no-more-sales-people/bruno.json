@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "no-more-sales-people",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

@@ -128,21 +128,23 @@ Use these credentials in the login form:
 - Email: `business@nomoresalespeople.com`
 - Password: `demo-password`
 
-Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. The frontend calls these endpoints:
+Once signed in, the page switches from the public lead finder to the analytics dashboard and the **Home** button returns you to the questionnaire. Login creates an HttpOnly session cookie; the summary and export requests use that cookie rather than sending the email or password again. The frontend calls these customer facade endpoints:
 
-The default **Lead summary view** shows the **Hot leads** card with the number of leads marked **Urgent - ASAP** and their average estimated value, making the high-priority opportunity visible at a glance. Each recent lead also receives a Bronze, Silver, Gold, or Platinum rating based on budget and urgency. Platinum is reserved for leads that are urgent, request a consultation, and select the £15k+ budget; the other tiers increase with budget value and urgency. Use **Analytics dashboard** to see simple graphical breakdowns for product goals, urgency, budget bands, areas, and lead ratings, plus hot-lead share and consultation rate. Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. Use **Delete lead** in that panel to remove a lead after confirmation. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
+If the account has no active subscription, the **Lead subscriptions** page appears first. Select one country, multiple countries, or all countries, choose Bronze, Silver, Gold, or Platinum, review the calculated monthly price, tick the acceptance box, and select **Accept and view leads**. The server recalculates the fixed price and only then enables summary and export. Multiple-country selections receive 10% off; all countries receives 20% off.
+
+The default **Lead summary view** shows the **Hot leads** card with the number of leads marked **Urgent - ASAP** and their average estimated value, making the high-priority opportunity visible at a glance. Each recent lead also receives a Bronze, Silver, Gold, or Platinum rating based on budget and urgency. Platinum is reserved for leads that are urgent, request a consultation, and select the £15k+ budget; the other tiers increase with budget value and urgency. The authenticated user's assigned lead plan filters the summary and export by its country scope and permitted ratings. Use **Analytics dashboard** to see simple graphical breakdowns for product goals, urgency, budget bands, areas, and lead ratings, plus hot-lead share and consultation rate. Select a recent lead to open its full details in the panel to the right of the lead list, including contact information, notes, recommendation, estimated budget value, consultation choice, and every questionnaire response. **Booked consults** counts leads that selected the consultation option, while **Average value** uses the midpoint of each lead's stated budget across all leads with a recognized budget.
 
 Use **Export CSV** to download every current lead and its questionnaire responses as `leads.csv`.
 
 ```powershell
 Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/business/login" `
+  -Uri "http://localhost:3000/api/customer/login" `
   -Method Post `
   -ContentType "application/json" `
   -Body '{"email":"business@nomoresalespeople.com","password":"demo-password"}'
 
 Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/business/summary" `
+  -Uri "http://localhost:3000/api/customer/summary" `
   -Method Get
 ```
 
@@ -204,8 +206,10 @@ CI checks the generated inventory on pull requests. After a change reaches `main
 | --- | --- | --- |
 | Visitor flow | `src/app/page.tsx` | Open http://localhost:3000 |
 | Lead API | `src/app/api/leads/route.ts` | POST http://localhost:3000/api/leads |
-| Business login API | `src/app/api/business/login/route.ts` | POST http://localhost:3000/api/business/login |
-| Business analytics API | `src/app/api/business/summary/route.ts` | GET http://localhost:3000/api/business/summary |
+| Customer login facade | `src/app/api/customer/login/route.ts` | POST http://localhost:3000/api/customer/login |
+| Customer summary facade | `src/app/api/customer/summary/route.ts` | GET http://localhost:3000/api/customer/summary |
+| Customer export facade | `src/app/api/customer/export/route.ts` | GET http://localhost:3000/api/customer/export |
+| Customer subscription facade | `src/app/api/customer/subscription/route.ts` | GET/POST http://localhost:3000/api/customer/subscription |
 | Database schema | `prisma/schema.prisma` | npm run db:deploy |
 | Database migrations | `prisma/migrations/` | npx prisma migrate status |
 | Database diagram | `docs/DATABASE_SCHEMA.md` | Open the Markdown preview |

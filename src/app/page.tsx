@@ -21,6 +21,23 @@ type BusinessUser = {
   email: string;
 };
 
+type SubscriptionType = "ONE_COUNTRY" | "MULTIPLE_COUNTRIES" | "ALL_COUNTRIES";
+type SubscriptionCountry = "SCOTLAND" | "IRELAND" | "ENGLAND" | "WALES";
+type SubscriptionRating = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+type ActiveSubscription = {
+  id: string;
+  type: SubscriptionType;
+  countries: SubscriptionCountry[];
+  rating: SubscriptionRating;
+  monthlyPricePence: number;
+  acceptedAt: string;
+};
+type SubscriptionOptions = {
+  countries: Array<{ value: SubscriptionCountry; label: string; basePricePence: number }>;
+  ratings: Array<{ value: SubscriptionRating; multiplier: number }>;
+  discounts: { multipleCountries: number; allCountries: number };
+};
+
 type LeadRating = "Bronze" | "Silver" | "Gold" | "Platinum";
 
 function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
@@ -54,6 +71,12 @@ function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
 }
 
 type AnalyticsSummary = {
+  plan: {
+    type: SubscriptionType;
+    countries: SubscriptionCountry[];
+    ratings: string[];
+    monthlyPricePence: number;
+  };
   totalLeads: number;
   bookedConsults: number;
   averageOrderValue: number;
@@ -228,13 +251,19 @@ export default function Home() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewMode>("home");
   const [businessUser, setBusinessUser] = useState<BusinessUser | null>(null);
+  const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
+  const [subscriptionOptions, setSubscriptionOptions] = useState<SubscriptionOptions | null>(null);
+  const [subscriptionType, setSubscriptionType] = useState<SubscriptionType>("ONE_COUNTRY");
+  const [selectedCountries, setSelectedCountries] = useState<SubscriptionCountry[]>(["SCOTLAND"]);
+  const [selectedRating, setSelectedRating] = useState<SubscriptionRating>("BRONZE");
+  const [acceptSubscriptionPrice, setAcceptSubscriptionPrice] = useState(false);
+  const [isSavingSubscription, setIsSavingSubscription] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [selectedLead, setSelectedLead] = useState<AnalyticsSummary["recentLeads"][number] | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isExportingLeads, setIsExportingLeads] = useState(false);
-  const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [businessSection, setBusinessSection] = useState<"summary" | "dashboard">("summary");
   const [theme, setTheme] = useState<Theme>("current");
 
@@ -284,7 +313,7 @@ export default function Home() {
     setIsLoadingAnalytics(true);
 
     try {
-      const response = await fetch("/api/business/summary");
+      const response = await fetch("/api/customer/summary");
       const data = await response.json();
 
       if (!response.ok) {
@@ -300,10 +329,28 @@ export default function Home() {
     }
   };
 
+  const loadSubscription = async () => {
+    const response = await fetch("/api/customer/subscription");
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to load lead subscriptions.");
+    }
+
+    setSubscriptionOptions(data.options);
+    setSubscription(data.subscription);
+    return data.subscription as ActiveSubscription | null;
+  };
+
   const handleBusinessNav = async () => {
     if (businessUser) {
       setCurrentView("business");
-      await loadAnalytics();
+      try {
+        const activeSubscription = await loadSubscription();
+        if (activeSubscription) await loadAnalytics();
+      } catch (error) {
+        setLoginError(error instanceof Error ? error.message : "Unable to load lead subscriptions.");
+      }
       return;
     }
 
@@ -312,11 +359,61 @@ export default function Home() {
     setAnalytics(null);
   };
 
+  const subscriptionPricePence = useMemo(() => {
+    if (!subscriptionOptions) return 0;
+    const countries = subscriptionType === "ALL_COUNTRIES"
+      ? subscriptionOptions.countries
+      : subscriptionOptions.countries.filter((country) => selectedCountries.includes(country.value));
+    const base = countries.reduce((total, country) => total + country.basePricePence, 0);
+    const multiplier = subscriptionOptions.ratings.find((rating) => rating.value === selectedRating)?.multiplier ?? 1;
+    const discount = subscriptionType === "MULTIPLE_COUNTRIES"
+      ? subscriptionOptions.discounts.multipleCountries
+      : subscriptionType === "ALL_COUNTRIES" ? subscriptionOptions.discounts.allCountries : 0;
+
+    return Math.round(base * multiplier * (1 - discount));
+  }, [selectedCountries, selectedRating, subscriptionOptions, subscriptionType]);
+
+  const handleSubscriptionTypeChange = (type: SubscriptionType) => {
+    setSubscriptionType(type);
+    if (type === "ONE_COUNTRY") setSelectedCountries([selectedCountries[0] ?? "SCOTLAND"]);
+    if (type === "MULTIPLE_COUNTRIES" && selectedCountries.length < 2) setSelectedCountries(["SCOTLAND", "WALES"]);
+    if (type === "ALL_COUNTRIES") setSelectedCountries([]);
+    setAcceptSubscriptionPrice(false);
+  };
+
+  const handleSaveSubscription = async () => {
+    setIsSavingSubscription(true);
+    setLoginError(null);
+
+    try {
+      const response = await fetch("/api/customer/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: subscriptionType,
+          countries: subscriptionType === "ALL_COUNTRIES" ? [] : selectedCountries,
+          rating: selectedRating,
+          acceptPrice: acceptSubscriptionPrice,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || "Unable to save subscription.");
+
+      setSubscription(data.subscription);
+      await loadAnalytics();
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "Unable to save subscription.");
+    } finally {
+      setIsSavingSubscription(false);
+    }
+  };
+
   const handleExportLeads = async () => {
     setIsExportingLeads(true);
 
     try {
-      const response = await fetch("/api/business/export");
+      const response = await fetch("/api/customer/export");
 
       if (!response.ok) {
         throw new Error("Unable to export leads.");
@@ -339,37 +436,12 @@ export default function Home() {
     }
   };
 
-  const handleDeleteLead = async () => {
-    if (!selectedLead || !window.confirm(`Delete the lead for ${selectedLead.name}?`)) {
-      return;
-    }
-
-    setIsDeletingLead(true);
-
-    try {
-      const response = await fetch(`/api/business/leads/${selectedLead.id}`, { method: "DELETE" });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to delete lead.");
-      }
-
-      setSelectedLead(null);
-      await loadAnalytics();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to delete lead.";
-      setLoginError(message);
-    } finally {
-      setIsDeletingLead(false);
-    }
-  };
-
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoginError(null);
 
     try {
-      const response = await fetch("/api/business/login", {
+      const response = await fetch("/api/customer/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -385,11 +457,19 @@ export default function Home() {
 
       setBusinessUser(data.user);
       setCurrentView("business");
-      await loadAnalytics();
+      const activeSubscription = await loadSubscription();
+      if (activeSubscription) await loadAnalytics();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to sign in.";
       setLoginError(message);
     }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/customer/login", { method: "DELETE" });
+    setBusinessUser(null);
+    setSubscription(null);
+    setAnalytics(null);
   };
 
   const handleAnswer = (answerId: string) => {
@@ -466,13 +546,9 @@ export default function Home() {
               </button>
             </div>
 
-            {businessUser ? (
+            {businessUser && (
               <div className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
                 {businessUser.name}
-              </div>
-            ) : (
-              <div className="rounded-full border border-amber-400/25 bg-amber-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-amber-200">
-                Business login
               </div>
             )}
             <ThemeSwitcher onChange={setTheme} />
@@ -529,6 +605,102 @@ export default function Home() {
                 </button>
               </form>
             </section>
+          ) : !subscription ? (
+            <section className="mx-auto max-w-4xl space-y-6">
+              <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-lg">
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-300">Lead subscriptions</p>
+                <h1 className="mt-4 text-3xl font-semibold text-white">Choose the leads you want to receive</h1>
+                <p className="mt-3 max-w-2xl text-slate-300">
+                  Select a country scope and lead rating. Your monthly price is fixed by the subscription and must be accepted before lead access is enabled.
+                </p>
+              </div>
+
+              {subscriptionOptions && (
+                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="rounded-[30px] border border-white/10 bg-slate-900/70 p-6">
+                    <h2 className="text-xl font-semibold text-white">Coverage</h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      {([
+                        ["ONE_COUNTRY", "One country", "No discount"],
+                        ["MULTIPLE_COUNTRIES", "Multiple countries", "10% discount"],
+                        ["ALL_COUNTRIES", "All countries", "20% discount"],
+                      ] as const).map(([type, label, detail]) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => handleSubscriptionTypeChange(type)}
+                          className={`rounded-2xl border p-4 text-left transition ${subscriptionType === type ? "border-emerald-300 bg-emerald-500/15" : "border-white/10 bg-white/5 hover:border-emerald-300/50"}`}
+                        >
+                          <span className="block font-medium text-white">{label}</span>
+                          <span className="mt-1 block text-xs text-slate-400">{detail}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <h2 className="mt-8 text-xl font-semibold text-white">Countries</h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {subscriptionOptions.countries.map((country) => (
+                        <label key={country.value} className={`flex items-center justify-between rounded-2xl border p-4 ${subscriptionType === "ALL_COUNTRIES" ? "border-white/5 bg-white/5 opacity-60" : "border-white/10 bg-white/5"}`}>
+                          <span>
+                            <span className="block font-medium text-white">{country.label}</span>
+                            <span className="text-xs text-slate-400">{formatCurrency(country.basePricePence / 100)} / month at Bronze</span>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={subscriptionType === "ALL_COUNTRIES" || selectedCountries.includes(country.value)}
+                            disabled={subscriptionType === "ALL_COUNTRIES"}
+                            onChange={() => {
+                              setAcceptSubscriptionPrice(false);
+                              setSelectedCountries((current) => current.includes(country.value)
+                                ? current.filter((value) => value !== country.value)
+                                : [...current, country.value]);
+                            }}
+                            className="h-5 w-5 accent-emerald-400"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <h2 className="mt-8 text-xl font-semibold text-white">Lead rating</h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                      {subscriptionOptions.ratings.map((rating) => (
+                        <button
+                          key={rating.value}
+                          type="button"
+                          onClick={() => { setSelectedRating(rating.value); setAcceptSubscriptionPrice(false); }}
+                          className={`rounded-2xl border p-4 text-left transition ${selectedRating === rating.value ? "border-emerald-300 bg-emerald-500/15" : "border-white/10 bg-white/5 hover:border-emerald-300/50"}`}
+                        >
+                          <span className="block font-medium text-white">{rating.value}</span>
+                          <span className="mt-1 block text-xs text-slate-400">{Math.round((rating.multiplier - 1) * 100)}% over Bronze</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <aside className="h-fit rounded-[30px] border border-emerald-300/30 bg-emerald-500/10 p-6">
+                    <p className="text-xs uppercase tracking-[0.25em] text-emerald-200">Subscription total</p>
+                    <p className="mt-3 text-4xl font-semibold text-white">{formatCurrency(subscriptionPricePence / 100)}</p>
+                    <p className="mt-1 text-sm text-emerald-100/80">per month</p>
+                    <p className="mt-5 text-sm text-slate-200">
+                      {subscriptionType === "ALL_COUNTRIES" ? "All countries" : selectedCountries.length ? selectedCountries.join(", ") : "Choose at least one country"} · {selectedRating}
+                    </p>
+                    {loginError && <p className="mt-4 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{loginError}</p>}
+                    <label className="mt-6 flex gap-3 text-sm text-slate-200">
+                      <input type="checkbox" checked={acceptSubscriptionPrice} onChange={(event) => setAcceptSubscriptionPrice(event.target.checked)} className="mt-1 h-4 w-4 accent-emerald-400" />
+                      <span>I accept this fixed monthly subscription price.</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSaveSubscription}
+                      disabled={isSavingSubscription || !acceptSubscriptionPrice || subscriptionPricePence === 0}
+                      className="mt-6 w-full rounded-full bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingSubscription ? "Saving subscription..." : "Accept and view leads"}
+                    </button>
+                  </aside>
+                </div>
+              )}
+            </section>
           ) : (
             <section className="space-y-6">
               <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 p-5">
@@ -556,7 +728,7 @@ export default function Home() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBusinessUser(null)}
+                    onClick={handleLogout}
                     className="rounded-full border border-white/10 px-4 py-2 text-sm text-slate-200 transition hover:border-white/25"
                   >
                     Log out
@@ -725,15 +897,6 @@ export default function Home() {
                           Close
                         </button>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={handleDeleteLead}
-                        disabled={isDeletingLead}
-                        className="mb-5 w-full rounded-full border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isDeletingLead ? "Deleting..." : "Delete lead"}
-                      </button>
 
                       <div className="grid gap-4 text-sm text-slate-200 sm:grid-cols-2">
                         <div>

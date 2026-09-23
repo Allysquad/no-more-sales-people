@@ -48,12 +48,23 @@ test('stores every lead field and questionnaire response in PostgreSQL', async (
 test('business users can be looked up by email and password in the database', async () => {
   const email = 'business-demo@example.com';
   const password = 'demo-password';
+  const leadPlan = await prisma.leadPlan.create({
+    data: {
+      name: 'Database test plan',
+      type: 'ALL_COUNTRIES',
+      countries: [],
+      ratings: ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM'],
+      monthlyPricePence: 0,
+      pricePerLeadPence: 0,
+    },
+  });
 
   const created = await prisma.businessUser.create({
     data: {
       name: 'Demo Business User',
       email,
       password,
+      leadPlanId: leadPlan.id,
     },
   });
 
@@ -66,5 +77,6 @@ test('business users can be looked up by email and password in the database', as
     assert.equal(found.id, created.id);
   } finally {
     await prisma.businessUser.delete({ where: { id: created.id } });
+    await prisma.leadPlan.delete({ where: { id: leadPlan.id } });
   }
 });

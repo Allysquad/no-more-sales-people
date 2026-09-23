@@ -7,6 +7,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LeadPlanType {
+  ONE_COUNTRY
+  MULTIPLE_COUNTRIES
+  ALL_COUNTRIES
+}
+
+enum LeadCountry {
+  SCOTLAND
+  IRELAND
+  ENGLAND
+  WALES
+}
+
+enum LeadRating {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
 model Lead {
   id        String   @id @default(cuid())
   name      String
@@ -26,5 +46,35 @@ model BusinessUser {
   name      String
   email     String   @unique
   password  String
+  leadPlanId String
+  leadPlan  LeadPlan @relation(fields: [leadPlanId], references: [id])
+  subscriptions LeadSubscription[]
   createdAt DateTime @default(now())
+}
+
+model LeadPlan {
+  id                 String         @id @default(cuid())
+  name               String
+  type               LeadPlanType
+  countries          LeadCountry[]
+  ratings            LeadRating[]
+  monthlyPricePence  Int
+  pricePerLeadPence  Int
+  users              BusinessUser[]
+  createdAt          DateTime       @default(now())
+}
+
+model LeadSubscription {
+  id                 String         @id @default(cuid())
+  businessUserId     String
+  businessUser       BusinessUser  @relation(fields: [businessUserId], references: [id], onDelete: Cascade)
+  type               LeadPlanType
+  countries          LeadCountry[]
+  rating             LeadRating
+  monthlyPricePence  Int
+  acceptedAt         DateTime
+  active             Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+
+  @@index([businessUserId, active])
 }

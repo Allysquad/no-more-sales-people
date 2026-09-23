@@ -9,7 +9,7 @@ A conversion-focused lead qualification site built with Next.js, TypeScript, and
 - collects name, email, phone, postcode, and project notes
 - stores leads in PostgreSQL through the API layer
 - gates the business analytics view behind a database-backed login
-- shows a business dashboard with summary metrics and recent leads for approved users only
+- shows a business dashboard with summary metrics and recent leads filtered by each user's lead plan
 
 ## Local development
 
@@ -47,10 +47,15 @@ The public lead flow is the default homepage. For the business-only dashboard, s
 - Email: `business@nomoresalespeople.com`
 - Password: `demo-password`
 
-The business API endpoints are:
+The customer facade endpoints are:
 
-- `POST http://localhost:3000/api/business/login`
-- `GET http://localhost:3000/api/business/summary`
+- `POST http://localhost:3000/api/customer/login`
+- `GET http://localhost:3000/api/customer/summary`
+- `GET http://localhost:3000/api/customer/export`
+
+After login, the authenticated user's `LeadPlan` limits both endpoints by country scope (`ONE_COUNTRY`, `MULTIPLE_COUNTRIES`, or `ALL_COUNTRIES`) and permitted lead rating (`BRONZE`, `SILVER`, `GOLD`, or `PLATINUM`). The plan also stores monthly and per-lead pricing in pence for future billing integration.
+
+Customers can choose and accept a `LeadSubscription` from the dashboard. Bronze monthly prices are Scotland £1,000, England £2,000, Wales £800, and Ireland £500. Silver adds 20%, Gold adds 75%, and Platinum adds 125%; multiple countries receive 10% off and all countries receive 20% off. Summary and export remain locked until the price is accepted.
 
 The lead API is available at `POST http://localhost:3000/api/leads` and is called by the form automatically.
 
@@ -102,8 +107,9 @@ Open `http://localhost:3000`. The `web` container uses the Compose service name 
 
 - [src/app/page.tsx](src/app/page.tsx) — lead questionnaire, recommendation logic, and gated business dashboard
 - [src/app/api/leads/route.ts](src/app/api/leads/route.ts) — lead validation and PostgreSQL persistence
-- [src/app/api/business/login/route.ts](src/app/api/business/login/route.ts) — business-user login check against the database
-- [src/app/api/business/summary/route.ts](src/app/api/business/summary/route.ts) — analytics summary for signed-in business users
+- [src/app/api/customer/login/route.ts](src/app/api/customer/login/route.ts) — login facade that creates an HttpOnly session cookie
+- [src/app/api/customer/summary/route.ts](src/app/api/customer/summary/route.ts) — authenticated analytics summary facade
+- [src/app/api/customer/export/route.ts](src/app/api/customer/export/route.ts) — authenticated lead export facade
 - [src/app/layout.tsx](src/app/layout.tsx) — app shell and metadata
 - [src/app/globals.css](src/app/globals.css) — theme and styling
 - [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) — database diagram and schema reference
