@@ -13,6 +13,10 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
+FROM builder AS migrator
+
+CMD ["npx", "prisma", "migrate", "deploy"]
+
 FROM node:20-slim AS runner
 WORKDIR /app
 

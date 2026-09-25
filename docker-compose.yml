@@ -16,14 +16,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://app:app_password@postgres:5432/no_more_sales_people?schema=public
+
   web:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://app:app_password@postgres:5432/no_more_sales_people?schema=public
       CUSTOMER_SESSION_SECRET: local-development-session-secret-change-me

@@ -98,10 +98,9 @@ For a production-like local run, build and start the Next.js app container along
 
 ```powershell
 docker compose up --build -d
-powershell -ExecutionPolicy Bypass -NoLogo -Command "npm run db:deploy"
 ```
 
-Open `http://localhost:3000`. The `web` container uses the Compose service name `postgres` for its database connection. The deploy command applies migrations and seeds 10 demo leads idempotently. Stop the containerized app and database with `docker compose down`.
+Open `http://localhost:3000`. Compose runs the migration container after PostgreSQL is healthy and before starting `web`. The `web` container uses the Compose service name `postgres` for its database connection. Stop the containerized app and database with `docker compose down`.
 
 ## Project structure
 

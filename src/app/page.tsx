@@ -49,6 +49,21 @@ function ThemeSwitcher({ onChange }: { onChange: (theme: Theme) => void }) {
   );
 }
 
+function DashboardMascot() {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center" aria-label="No More Sales People: the best in the business, without the pane-ic.">
+      <svg className="h-16 w-16 text-sky-300" viewBox="0 0 64 64" role="img" aria-hidden="true">
+        <rect x="10" y="8" width="44" height="48" rx="7" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M32 8v48M10 32h44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M25 27c2-1.5 4-1.5 6 0M39 27c-2-1.5-4-1.5-6 0M27 38c3 2 7 2 10 0" fill="none" stroke="#34d399" strokeLinecap="round" strokeWidth="2.25" />
+        <path d="M48 42v5" stroke="#34d399" strokeLinecap="round" strokeWidth="2.5" />
+      </svg>
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">No More Sales People</p>
+      <p className="text-sm text-slate-300">The best in the business, without the pane-ic.</p>
+    </div>
+  );
+}
+
 type AnalyticsSummary = {
   plan: { type: SubscriptionType; countries: SubscriptionCountry[]; ratings: string[]; monthlyPricePence: number };
   totalLeads: number;
@@ -1258,6 +1273,9 @@ export default function Home() {
   return (
     <main data-theme={theme} className="min-h-screen bg-[radial-gradient(circle_at_top,_#10253d,_#0f172a_45%,_#020617_100%)] px-4 py-10 text-slate-50 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
+        <div className="mb-5 flex justify-center">
+          <DashboardMascot />
+        </div>
         <header className="relative z-30 mb-8 flex flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <button
