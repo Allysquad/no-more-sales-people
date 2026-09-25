@@ -15,6 +15,7 @@ This update continues to strengthen the lead qualification prototype for a home 
 - GitHub repository setup and automation for tracking project updates.
 
 ### Recent activity
+- 2026-09-25: add migration workflow and dashboard mascot (github-actions[bot])
 - 2026-09-23: Add completed lead dashboard and filtering (Alli)
 - 2026-09-23: Add authenticated lead subscriptions (Alli)
 - 2026-09-23: Refine lead qualification experience (Alli)
@@ -25,11 +26,10 @@ This update continues to strengthen the lead qualification prototype for a home 
 - 2026-09-08: add business login and gated analytics (Alli)
 - 2026-09-08: Add end-to-end lead funnel test (Alli)
 - 2026-09-08: Add demo runbook and documentation automation (Alli)
-- 2026-09-08: Add PostgreSQL setup, schema docs, and CI (Alli)
 
 ### Next milestone
 - Connect the enquiry form to a real backend, CRM, or email workflow.
 - Review the flow with business stakeholders and refine messaging for conversion.
 - Prepare production deployment and lead routing for live traffic.
 
-### Last updated: 2026-09-23
+### Last updated: 2026-09-25
